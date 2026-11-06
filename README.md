@@ -1,20 +1,29 @@
 # Rodel Vibal — CAD Designer & Model Expert Portfolio
 
-A responsive, technical portfolio website. This is intentionally a portfolio presentation, not an e-commerce storefront: there are no product prices, carts, checkout flows, or purchase buttons.
+A responsive, technically oriented portfolio website for furniture, cabinetry, and interior millwork design. This is a portfolio presentation, not an e-commerce storefront.
 
-## Files
-- `index.html` — page structure and content
-- `styles.css` — responsive visual system
-- `script.js` — interactive Three.js household-product model studies
+## Included files
+- `index.html` — complete page structure and portfolio content
+- `styles.css` — responsive visual design and technical viewer controls
+- `script.js` — interactive Three.js furniture models and inspection controls
+
+## Interactive model studies
+1. Kitchen island and countertop assembly
+2. Dining table and chair set
+3. Four-drawer storage cabinet
+4. Built-in wardrobe system
+
+The 3D viewer supports orbit rotation, zoom, isometric/front/side/top camera presets, wireframe mode, exploded component offsets, and dimension callouts.
 
 ## Run locally
-Keep all three files in one folder. Open `index.html` through a local static server (recommended), for example VS Code Live Server. The site uses CDN-hosted Bootstrap, Google Fonts, and Three.js, so an internet connection is required for those assets.
+Keep all files in the same folder. Open `index.html` through a local static server (VS Code Live Server is recommended). The site uses CDN-hosted Bootstrap, Google Fonts, and Three.js, so an internet connection is required for these assets.
 
-## Publish on GitHub Pages
-Upload all three files to the repository's published root (or the same subfolder) and commit. Do not separate the CSS or JS files from `index.html`.
+## Publish with GitHub Pages
+Upload all three website files to the same published folder and commit the changes. Do not separate the CSS or JavaScript files from `index.html`.
 
-## Important content notes
-- The four interactive models (multi-cooker, blender, table fan, handheld vacuum) are procedural concept models created for this portfolio layout. They are not native SolidWorks/AutoCAD files and are not claimed to be verified ISHIP LOGIPACK projects.
-- Replace the concept studies with Rodel's actual approved CAD renders, drawings, exploded views, and project descriptions before presenting this as a factual work history.
-- Add verified software names, certifications, earlier employment, dates, email, and other contact details. The email in the page is a placeholder.
-- The 16+ years and current employer are based on the information supplied for this portfolio.
+## Accuracy and portfolio content
+- The furniture models are original procedural 3D concept studies created for this portfolio. They are not native CAD exports, verified construction drawings, or confirmed ISHIP LOGIPACK projects.
+- The displayed envelope dimensions are illustrative model-study values, not manufacturing specifications.
+- Replace concept studies with Rodel's own approved CAD renders, drawings, exploded assemblies, joinery details, and project descriptions before public use.
+- Add verified software names, certifications, earlier employment, project dates, and contact details. The email address is a placeholder.
+- The 16+ years of experience and current employer are based on the information supplied for this portfolio.
