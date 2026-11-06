@@ -23,7 +23,7 @@ Upload all three website files to the same published folder and commit the chang
 
 ## Accuracy and portfolio content
 - The furniture models are original procedural 3D concept studies created for this portfolio. They are not native CAD exports, verified construction drawings, or confirmed ISHIP LOGIPACK projects.
-- The displayed envelope dimensions are illustrative model-study values, not manufacturing specifications.
+- The displayed envelope dimensions are illustrative concept dimensions only. They are not manufacturing specifications, verified site measurements, or approved construction dimensions.
 - Replace concept studies with Rodel's own approved CAD renders, drawings, exploded assemblies, joinery details, and project descriptions before public use.
 - Add verified software names, certifications, earlier employment, project dates, and contact details. The email address is a placeholder.
 - The 16+ years of experience and current employer are based on the information supplied for this portfolio.
