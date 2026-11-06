@@ -22,27 +22,70 @@ function addPart(root,name,items,offset=[0,0,0]){const part=group();part.name=na
 function handles(w,y,z,mat=material.brass){const a=[];for(const x of [-w/2,w/2]){a.push(cyl(.018,.018,.12,mat,x,y,z,12));}a.push(box(w,.025,.025,mat,0,y,z+.06));return a}
 function makeKitchen(){
  const root=group();
- // carcass and end panels
- addPart(root,'Carcass',[
-  box(3.2,.13,1.45,material.walnut,0,-.45,0),
-  box(.12,.88,1.45,material.walnut,-1.54,.0,0),box(.12,.88,1.45,material.walnut,1.54,.0,0),
-  box(3.0,.12,1.32,material.walnut,0,-.38,0),
-  box(3.0,.1,1.3,material.charcoal,0,.36,0)
- ],[0,-.35,0]);
- // stone top with waterfall-like lip
- addPart(root,'Stone worktop',[box(3.48,.16,1.72,material.stone,0,.52,0),box(3.5,.035,1.74,material.white,0,.615,0)],[0,.42,0]);
- // three drawer boxes/fronts
+ // Finished island envelope: 3200 W x 1600 D x 950 H (illustrative mm scale).
+ // Model is built from separate panels and modules; no solid block is used as the carcass.
+ const W=3.2, D=1.55, front=D/2;
+ // Recessed plinth and four adjustable levelling feet.
+ addPart(root,'Recessed plinth',[
+  box(2.92,.14,1.30,material.charcoal,0,.18,0),
+  box(2.82,.035,.035,material.black,0,.105,.66),
+  box(2.82,.035,.035,material.black,0,.105,-.66)
+ ],[0,-.12,0]);
+ const feet=[];
+ for(const x of [-1.42,1.42]) for(const z of [-.61,.61]){
+  feet.push(cyl(.055,.065,.12,material.black,x,.06,z,24));
+  feet.push(cyl(.075,.075,.025,material.brass,x,.025,z,24));
+ }
+ addPart(root,'Levelling feet',feet,[0,-.08,0]);
+ // Structural carcass: two end gables, rear panel, rails and floor panel.
+ addPart(root,'Carcass panels',[
+  box(.075,.68,1.40,material.walnut,-1.48,.56,0),
+  box(.075,.68,1.40,material.walnut,1.48,.56,0),
+  box(2.88,.68,.055,material.walnut,0,.56,-.68),
+  box(2.88,.065,1.32,material.walnut,0,.235,0),
+  box(2.88,.075,.10,material.walnut,0,.88,.68),
+  box(.075,.62,.10,material.walnut,-1.40,.56,.68),
+  box(.075,.62,.10,material.walnut,1.40,.56,.68)
+ ],[0,0,0]);
+ // Interior divider separates three-drawer stack and double-door cupboard.
+ addPart(root,'Module divider',[box(.065,.60,1.28,material.walnut,.30,.55,0)],[0,0,0]);
+ // Drawer boxes, face panels and discreet pulls on the left module.
  for(let i=0;i<3;i++){
-  const y=.17-i*.27;
-  addPart(root,`Drawer ${i+1}`,[box(.88,.22,1.18,material.oak,-.94,y,.08),box(.88,.22,.055,material.walnut,-.94,y,.69),...handles(.32,y,.73)],[0,0,.34+i*.06]);
+  const y=.76-i*.205;
+  const drawerX=-.55;
+  addPart(root,`Drawer module ${i+1}`,[
+   box(1.36,.035,.56,material.oak,drawerX,y-.065,.34),
+   box(1.36,.17,.045,material.walnut,drawerX,y,.665),
+   box(.045,.15,.56,material.walnut,drawerX-.68,y,.34),
+   box(.045,.15,.56,material.walnut,drawerX+.68,y,.34),
+   box(1.36,.17,.045,material.walnut,drawerX,y,-.0),
+   box(.30,.022,.028,material.brass,drawerX,y,.704)
+  ],[0,0,.06+i*.025]);
  }
- // double cabinet doors right
- for(let x of [.52,1.05]){
-  addPart(root,'Cabinet door',[box(.49,.78,.055,material.oak,x,-.02,.74),...handles(.18,.0,.80)],[0,0,.25]);
+ // Pair of hinged cupboard doors on right with reveal gaps and pulls.
+ for(const x of [.83,1.19]){
+  addPart(root,'Cupboard door',[
+   box(.345,.59,.055,material.oak,x,.55,.725),
+   box(.22,.018,.025,material.brass,x+(x<1?-.09:.09),.55,.765)
+  ],[0,0,.035]);
  }
- // adjustable feet
- const feet=[];for(let x of [-1.35,1.35])for(let z of [-.55,.55])feet.push(cyl(.055,.065,.16,material.black,x,-.57,z));
- addPart(root,'Adjustable feet',feet,[0,-.2,0]);
+ // Continuous worktop with eased-looking edge band and subtle backsplash-free profile.
+ addPart(root,'Stone countertop',[
+  box(3.38,.105,1.72,material.stone,0,1.00,0),
+  box(3.40,.025,1.74,material.white,0,1.065,0),
+  box(3.34,.025,.035,material.charcoal,0,.94,.855)
+ ],[0,.06,0]);
+ // Small inset sink / prep recess at rear-right as a clear functional detail.
+ addPart(root,'Inset prep sink',[
+  box(.62,.018,.48,material.black,.92,1.083,-.30),
+  box(.56,.018,.42,material.charcoal,.92,1.095,-.30),
+  box(.035,.045,.035,material.brass,.92,1.12,-.30)
+ ],[0,.02,0]);
+ // Under-counter toe shadow and front reveals.
+ addPart(root,'Front reveal details',[
+  box(2.86,.012,.012,material.black,0,.90,.738),
+  box(2.86,.012,.012,material.black,0,.205,.738)
+ ],[0,0,0]);
  return root;
 }
 function makeDining(){
@@ -95,49 +138,93 @@ function makeWardrobe(){
 }
 const builders={kitchen:makeKitchen,dining:makeDining,drawer:makeDrawer,wardrobe:makeWardrobe};
 const meta={
- kitchen:{code:'CASEWORK STUDY / RV-001',title:'Kitchen island & countertop',desc:'Modular island assembly with stone-look worktop, carcass panels, drawer modules, cabinet fronts, hardware details, and adjustable feet.',focus:'Casework / Worktop',size:'1800 × 900 × 950 mm'},
+ kitchen:{code:'CASEWORK STUDY / RV-001',title:'Kitchen island & countertop',desc:'Modular island assembly with stone-look worktop, carcass panels, drawer modules, cabinet fronts, hardware details, and adjustable feet.',focus:'Casework / Worktop',size:'Concept envelope · 3400 × 1740 × 1150 mm'},
  dining:{code:'FURNITURE STUDY / RV-002',title:'Dining table & chair set',desc:'Dining furniture set with a layered tabletop, apron rails, four-leg support structure, and coordinated chair assemblies with back rails and spindles.',focus:'Furniture / Joinery',size:'1600 × 800 × 760 mm'},
  drawer:{code:'CASEWORK STUDY / RV-003',title:'Four-drawer storage cabinet',desc:'Freestanding storage cabinet featuring a rigid carcass, four drawer boxes, front panels, pull handles, concealed runner zones, and plinth.',focus:'Drawer / Hardware',size:'1000 × 450 × 1100 mm'},
  wardrobe:{code:'MILLWORK STUDY / RV-004',title:'Built-in wardrobe system',desc:'Full-height wardrobe concept with paired slab doors, internal shelving, hanging rail, lower drawer module, top and bottom panels, and toe-kick.',focus:'Built-in / Storage',size:'1500 × 450 × 2100 mm'}
 };
 function createScene(canvas,builder,{autoRotate=false}={}){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
- const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(35,canvas.clientWidth/canvas.clientHeight,.1,100);camera.position.set(4.6,3.2,6.2);
- scene.add(new THREE.HemisphereLight(0xe2f0ef,0x202a2d,2));
- const key=new THREE.DirectionalLight(0xffd4a7,2.8);key.position.set(4,7,5);key.castShadow=true;scene.add(key);
- const fill=new THREE.DirectionalLight(0x9bbdc8,1.9);fill.position.set(-5,3,-4);scene.add(fill);
- const amber=new THREE.PointLight(0xf29a43,25,14);amber.position.set(2,2,4);scene.add(amber);
- const object=builder();scene.add(object);
- const bounds=new THREE.Box3().setFromObject(object);
- const center=bounds.getCenter(new THREE.Vector3()),floorY=bounds.min.y-.035;
- const grid=new THREE.GridHelper(14,28,0x63818a,0x3c5159);grid.position.y=floorY;grid.material.transparent=true;grid.material.opacity=.25;scene.add(grid);
- const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;controls.minDistance=2.5;controls.maxDistance=14;controls.target.copy(center);camera.lookAt(center);
- const baseCamera={iso:new THREE.Vector3(4.6,3.2,6.2),front:new THREE.Vector3(0,1.2,8),side:new THREE.Vector3(8,1.2,0),top:new THREE.Vector3(0,9,.01)};
- let wire=false,exploded=false,dimensions=false,raf=0;
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+ renderer.setSize(Math.max(canvas.clientWidth,1),Math.max(canvas.clientHeight,1),false);
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ const scene=new THREE.Scene();
+ const camera=new THREE.PerspectiveCamera(35,Math.max(canvas.clientWidth,1)/Math.max(canvas.clientHeight,1),.05,200);
+ scene.add(new THREE.HemisphereLight(0xe2f0ef,0x202a2d,2.1));
+ const key=new THREE.DirectionalLight(0xffd4a7,3.0);key.position.set(4,8,6);key.castShadow=true;scene.add(key);
+ const fill=new THREE.DirectionalLight(0x9bbdc8,2.0);fill.position.set(-5,4,-4);scene.add(fill);
+ const rim=new THREE.DirectionalLight(0xf29a43,1.1);rim.position.set(0,3,7);scene.add(rim);
+ let object=builder();scene.add(object);
+ const grid=new THREE.GridHelper(20,40,0x63818a,0x3c5159);grid.material.transparent=true;grid.material.opacity=.23;scene.add(grid);
+ const controls=new OrbitControls(camera,renderer.domElement);
+ controls.enableDamping=true;controls.dampingFactor=.075;controls.minDistance=1.5;controls.maxDistance=30;
+ let bounds=new THREE.Box3(),center=new THREE.Vector3(),size=new THREE.Vector3(),fitDistance=7;
+ function measureAndFrame(){
+  bounds.setFromObject(object);bounds.getCenter(center);bounds.getSize(size);
+  const maxDim=Math.max(size.x,size.y,size.z,1);
+  fitDistance=(maxDim/2)/Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*1.55;
+  controls.target.copy(center);
+  camera.position.set(center.x+fitDistance*.72,center.y+fitDistance*.48,center.z+fitDistance);
+  camera.near=Math.max(.01,fitDistance/100);camera.far=fitDistance*30;camera.updateProjectionMatrix();
+  grid.position.y=bounds.min.y-.04;controls.update();
+ }
+ measureAndFrame();
+ let wire=false,exploded=false,raf=0,spin=autoRotate;
  const resize=()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()};
  const ro=new ResizeObserver(resize);ro.observe(canvas);
- function setView(view){const pos=baseCamera[view]||baseCamera.iso;camera.position.copy(pos);controls.target.set(0,0,0);controls.update()}
- function setWire(value){wire=value;object.traverse(o=>{if(o.isMesh){if(!o.userData.originalMaterial){o.userData.originalMaterial=o.material;o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m)m.wireframe=wire})}})}
- function setExploded(value){exploded=value;object.children.forEach((part,i)=>{const home=part.userData.home||new THREE.Vector3();const off=part.userData.explodeOffset||new THREE.Vector3(0,(i%2?1:-1)*.12,0);part.position.copy(home).addScaledVector(off,exploded?1:0)})}
- function animate(){raf=requestAnimationFrame(animate);if(autoRotate&&!controls.enabled)object.rotation.y+=.002;controls.update();renderer.render(scene,camera)}animate();
- return {scene,object,camera,controls,renderer,setView,setWire,setExploded,get exploded(){return exploded},dispose(){cancelAnimationFrame(raf);ro.disconnect();controls.dispose();renderer.dispose()}};
+ function setView(view){
+  const d=fitDistance*1.65;
+  const positions={
+   iso:new THREE.Vector3(.72,.48,1).multiplyScalar(d),
+   front:new THREE.Vector3(0,.08,1).multiplyScalar(d),
+   side:new THREE.Vector3(1,.08,0).multiplyScalar(d),
+   top:new THREE.Vector3(0,1,.001).multiplyScalar(d)
+  };
+  camera.position.copy(center).add(positions[view]||positions.iso);
+  controls.target.copy(center);controls.update();
+ }
+ function setWire(value){
+  wire=value;
+  object.traverse(o=>{if(o.isMesh){
+   if(!o.userData.wireMaterial){o.userData.wireMaterial=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();o.userData.solidMaterial=o.material;}
+   o.material=value?o.userData.wireMaterial:o.userData.solidMaterial;
+   const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m)m.wireframe=value});
+  }});
+ }
+ function setExploded(value){
+  exploded=value;
+  object.children.forEach((part,i)=>{
+   const home=part.userData.home||new THREE.Vector3();
+   const off=part.userData.explodeOffset||new THREE.Vector3(0,(i%2?1:-1)*.12,0);
+   part.position.copy(home).addScaledVector(off,value?1:0);
+  });
+ }
+ function replaceObject(next){
+  scene.remove(object);
+  object.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.userData.wireMaterial){const mats=Array.isArray(o.userData.wireMaterial)?o.userData.wireMaterial:[o.userData.wireMaterial];mats.forEach(m=>m.dispose())}}});
+  object=next;scene.add(object);wire=false;exploded=false;measureAndFrame();
+ }
+ function animate(){raf=requestAnimationFrame(animate);if(spin&&!controls.state?.dragging)object.rotation.y+=.0015;controls.update();renderer.render(scene,camera)}
+ animate();
+ return {scene,get object(){return object},camera,controls,renderer,setView,setWire,setExploded,replaceObject,
+  dispose(){cancelAnimationFrame(raf);ro.disconnect();controls.dispose();renderer.dispose()}};
 }
 function addDimensionOverlay(container,dimensions){
  let overlay=container.querySelector('.dimension-overlay');
- if(!overlay){overlay=document.createElement('div');overlay.className='dimension-overlay';overlay.innerHTML='<span class="dim dim-width">↔ <b>1800 mm</b></span><span class="dim dim-height">↕ <b>950 mm</b></span><span class="dim dim-depth">↔ <b>900 mm</b></span>';container.appendChild(overlay)}
+ if(!overlay){overlay=document.createElement('div');overlay.className='dimension-overlay';overlay.innerHTML='<span class="dim dim-width">↔ <b>3400 mm · concept</b></span><span class="dim dim-height">↕ <b>1150 mm · concept</b></span><span class="dim dim-depth">↔ <b>1740 mm · concept</b></span>';container.appendChild(overlay)}
  overlay.classList.toggle('show',dimensions);
 }
 let hero,viewer;
 try{
- hero=createScene($('#hero-model'),makeKitchen,{autoRotate:true});
+ hero=createScene($('#hero-model'),makeKitchen,{autoRotate:false});
  viewer=createScene($('#project-model'),makeKitchen);
  const tabs=[...document.querySelectorAll('.project-tab')];
  function selectModel(key,tab){
   tabs.forEach(t=>{t.classList.toggle('active',t===tab);t.setAttribute('aria-selected',String(t===tab))});
   const data=meta[key];$('#viewer-code').textContent=data.code;$('#project-title').textContent=data.title;$('#project-desc').textContent=data.desc;$('#project-focus').textContent=data.focus;
   const size=$('#project-size');if(size)size.textContent=data.size;
-  viewer.scene.remove(viewer.object);viewer.object.traverse(o=>{if(o.isMesh){o.geometry.dispose()}});viewer.object=builders[key]();viewer.scene.add(viewer.object);
+  viewer.replaceObject(builders[key]());
   viewer.setWire(false);viewer.setExploded(false);$('#wire-toggle')?.classList.remove('selected');$('#explode-toggle')?.classList.remove('selected');
   addDimensionOverlay($('.viewer-canvas-wrap'),false);
  }
