@@ -115,9 +115,9 @@ function makeFullKitchen(){
   if(i===1||i===2){
    for(let j=0;j<3;j++){
     const y=.72-j*.235;
-    parts(`Back drawer bank ${i+1} · drawer ${j+1}`,[box(.76,.205,.045,material.oak,x,y,-.855),box(.62,.018,.025,material.brass,x,y,-.823)],[0,0,.035]);
+    parts(`Back drawer bank ${i+1} · drawer ${j+1}`,[box(.76,.205,.045,material.oak,x,y,-1.20),box(.62,.018,.025,material.brass,x,y,-1.165)],[0,0,.035]);
    }
-  }else parts(`Back base door ${i+1}`,[box(.78,.70,.045,material.oak,x,.47,-.855),box(.24,.025,.025,material.brass,x+.25,.48,-.82)],[0,0,.035]);
+  }else if(i!==4) parts(`Back base door ${i+1}`,[box(.78,.70,.045,material.oak,x,.47,-1.20),box(.24,.025,.025,material.brass,x+.25,.48,-1.165)],[0,0,.035]);
  }
  for(let i=0;i<3;i++){
   const z=-.98+i*.70;
@@ -148,11 +148,11 @@ function makeFullKitchen(){
   ...[-.22,.22].flatMap(x=>[-.13,.13].map(z=>cyl(.105,.105,.012,material.charcoal,.65+x,1.022,-1.50+z,32)))
  ],[0,.025,0]);
  parts('Built-in oven',[
-  box(.72,.56,.48,material.black,.65,.47,-.78),box(.64,.40,.025,material.glass,.65,.48,-.525),
-  box(.48,.035,.025,material.brass,.65,.76,-.51),box(.12,.035,.025,material.charcoal,.65,.82,-.51)
+  box(.72,.56,.48,material.black,.65,.47,-1.50),box(.64,.40,.025,material.glass,.65,.48,-1.253),
+  box(.48,.035,.025,material.brass,.65,.76,-1.238),box(.12,.035,.025,material.charcoal,.65,.82,-1.238)
  ],[0,0,.08]);
  parts('Backsplash and extractor',[
-  box(4.18,.48,.035,material.pale,0,1.25,-1.19),box(1.05,.12,.55,material.charcoal,.65,1.72,-1.45),box(.78,.42,.22,material.black,.65,1.94,-1.50)
+  box(4.18,.48,.035,material.pale,0,1.25,-1.755),box(1.05,.12,.55,material.charcoal,.65,1.72,-1.68),box(.78,.42,.22,material.black,.65,1.94,-1.73)
  ],[0,.04,0]);
  parts('Island carcass',[
   box(1.85,.78,.78,material.walnut,0,.46,.35),box(1.78,.055,.72,material.oak,0,.07,.35),
@@ -243,9 +243,9 @@ function createScene(canvas,builder,{autoRotate=false}={}){
  function measureAndFrame(){
   bounds.setFromObject(object);bounds.getCenter(center);bounds.getSize(size);
   const maxDim=Math.max(size.x,size.y,size.z,1);
-  fitDistance=(maxDim/2)/Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*1.55;
+  fitDistance=(maxDim/2)/Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*1.75;
   controls.target.copy(center);
-  camera.position.set(center.x+fitDistance*.72,center.y+fitDistance*.48,center.z+fitDistance);
+  camera.position.set(center.x+fitDistance*.72,center.y+fitDistance*.72,center.z+fitDistance);
   camera.near=Math.max(.01,fitDistance/100);camera.far=fitDistance*30;camera.updateProjectionMatrix();
   grid.position.y=bounds.min.y-.04;controls.update();
  }
@@ -256,7 +256,7 @@ function createScene(canvas,builder,{autoRotate=false}={}){
  function setView(view){
   const d=fitDistance*1.65;
   const positions={
-   iso:new THREE.Vector3(.72,.48,1).multiplyScalar(d),
+   iso:new THREE.Vector3(.72,.72,1).multiplyScalar(d),
    front:new THREE.Vector3(0,.08,1).multiplyScalar(d),
    side:new THREE.Vector3(1,.08,0).multiplyScalar(d),
    top:new THREE.Vector3(0,1,.001).multiplyScalar(d)
