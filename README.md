@@ -9,9 +9,10 @@ A responsive, technically oriented portfolio website for furniture, cabinetry, a
 
 ## Interactive model studies
 1. Kitchen island and countertop assembly
-2. Dining table and chair set
-3. Four-drawer storage cabinet
-4. Built-in wardrobe system
+2. Full kitchen cabinetry and appliance layout (L-shaped run with central island)
+3. Dining table and chair set
+4. Four-drawer storage cabinet
+5. Built-in wardrobe system
 
 The 3D viewer supports orbit rotation, zoom, isometric/front/side/top camera presets, wireframe mode, exploded component offsets, and dimension callouts.
 
@@ -22,8 +23,8 @@ Keep all files in the same folder. Open `index.html` through a local static serv
 Upload all three website files to the same published folder and commit the changes. Do not separate the CSS or JavaScript files from `index.html`.
 
 ## Accuracy and portfolio content
-- The furniture models are original procedural 3D concept studies created for this portfolio. They are not native CAD exports, verified construction drawings, or confirmed ISHIP LOGIPACK projects.
-- The displayed envelope dimensions are illustrative concept dimensions only. They are not manufacturing specifications, verified site measurements, or approved construction dimensions.
+- The furniture and kitchen models are original procedural 3D concept studies created for this portfolio. They are not native CAD exports, verified construction drawings, or confirmed ISHIP LOGIPACK projects.
+- The displayed envelope and room-layout dimensions are illustrative concept dimensions only. They are not manufacturing specifications, verified site measurements, or approved construction dimensions.
 - Replace concept studies with Rodel's own approved CAD renders, drawings, exploded assemblies, joinery details, and project descriptions before public use.
 - Add verified software names, certifications, earlier employment, project dates, and contact details. The email address is a placeholder.
 - The 16+ years of experience and current employer are based on the information supplied for this portfolio.

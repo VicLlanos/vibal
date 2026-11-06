@@ -88,6 +88,85 @@ function makeKitchen(){
  ],[0,0,0]);
  return root;
 }
+function makeFullKitchen(){
+ const root=group();
+ // Room-scale concept layout. Coordinates are metres; dimensions are illustrative,
+ // not site-verified or construction-approved.
+ const parts=(name,items,offset=[0,0,0])=>addPart(root,name,items,offset);
+ const baseY=.46, backZ=-1.55;
+ parts('Back-run base carcasses',[
+  box(4.25,.82,.62,material.walnut,0,baseY,backZ),
+  box(4.20,.055,.58,material.oak,0,.055,backZ),
+  ...[-1.38,-.48,.48,1.38].map(x=>box(.045,.76,.60,material.oak,x,baseY,backZ))
+ ],[0,-.10,0]);
+ parts('Left-return base carcasses',[
+  box(.62,.82,2.15,material.walnut,-2.15,baseY,-.28),
+  box(.58,.055,2.10,material.oak,-2.15,.055,-.28),
+  ...[-.92,-.05,.82].map(z=>box(.58,.76,.045,material.oak,-2.15,baseY,z))
+ ],[-.10,0,0]);
+ parts('Stone worktops',[
+  box(4.42,.10,.76,material.stone,0,.91,backZ+.02),
+  box(.78,.10,2.22,material.stone,-2.15,.91,-.28),
+  box(4.40,.018,.74,material.white,0,.969,backZ+.02),
+  box(.76,.018,2.20,material.white,-2.15,.969,-.28)
+ ],[0,.04,0]);
+ for(let i=0;i<5;i++){
+  const x=-1.68+i*.84;
+  if(i===1||i===2){
+   for(let j=0;j<3;j++){
+    const y=.72-j*.235;
+    parts(`Back drawer bank ${i+1} · drawer ${j+1}`,[box(.76,.205,.045,material.oak,x,y,-.855),box(.62,.018,.025,material.brass,x,y,-.823)],[0,0,.035]);
+   }
+  }else parts(`Back base door ${i+1}`,[box(.78,.70,.045,material.oak,x,.47,-.855),box(.24,.025,.025,material.brass,x+.25,.48,-.82)],[0,0,.035]);
+ }
+ for(let i=0;i<3;i++){
+  const z=-.98+i*.70;
+  parts(`Return base door ${i+1}`,[box(.045,.70,.64,material.oak,-1.805,.47,z),box(.025,.24,.025,material.brass,-1.77,.48,z+.23)],[.035,0,0]);
+ }
+ parts('Upper cabinet carcasses',[
+  box(3.85,.72,.36,material.pale,0,1.91,backZ),box(3.80,.035,.34,material.oak,0,1.55,backZ),
+  ...[-1.25,-.42,.42,1.25].map(x=>box(.035,.68,.34,material.oak,x,1.91,backZ))
+ ],[0,.10,0]);
+ for(let i=0;i<4;i++){
+  const x=-1.43+i*.95;
+  parts(`Upper cabinet door ${i+1}`,[box(.91,.68,.045,material.white,x,1.91,-1.345),box(.018,.12,.025,material.brass,x+.36,1.91,-1.305)],[0,0,.035]);
+ }
+ parts('Tall appliance and pantry housing',[
+  box(.82,2.35,.70,material.walnut,2.08,1.18,backZ),box(.78,.045,.66,material.oak,2.08,2.34,backZ),
+  box(.035,2.25,.66,material.oak,1.68,1.18,backZ),box(.035,2.25,.66,material.oak,2.48,1.18,backZ)
+ ],[.12,0,0]);
+ parts('Tall cabinet fronts',[
+  box(.75,1.08,.045,material.pale,2.08,1.79,-1.18),box(.75,.98,.045,material.charcoal,2.08,.70,-1.18),
+  box(.025,.32,.025,material.brass,2.36,1.79,-1.14),box(.025,.32,.025,material.brass,2.36,.70,-1.14)
+ ],[0,0,.05]);
+ parts('Sink and faucet',[
+  box(.72,.025,.43,material.black,-.95,1.00,-1.52),box(.64,.018,.35,material.charcoal,-.95,1.012,-1.52),
+  cyl(.025,.025,.38,material.brass,-.55,1.17,-1.48,20),cyl(.018,.018,.24,material.brass,-.55,1.34,-1.36,20)
+ ],[0,.025,0]);
+ parts('Cooktop',[
+  box(.78,.025,.52,material.black,.65,1.005,-1.50),
+  ...[-.22,.22].flatMap(x=>[-.13,.13].map(z=>cyl(.105,.105,.012,material.charcoal,.65+x,1.022,-1.50+z,32)))
+ ],[0,.025,0]);
+ parts('Built-in oven',[
+  box(.72,.56,.48,material.black,.65,.47,-.78),box(.64,.40,.025,material.glass,.65,.48,-.525),
+  box(.48,.035,.025,material.brass,.65,.76,-.51),box(.12,.035,.025,material.charcoal,.65,.82,-.51)
+ ],[0,0,.08]);
+ parts('Backsplash and extractor',[
+  box(4.18,.48,.035,material.pale,0,1.25,-1.19),box(1.05,.12,.55,material.charcoal,.65,1.72,-1.45),box(.78,.42,.22,material.black,.65,1.94,-1.50)
+ ],[0,.04,0]);
+ parts('Island carcass',[
+  box(1.85,.78,.78,material.walnut,0,.46,.35),box(1.78,.055,.72,material.oak,0,.07,.35),
+  box(.055,.70,.70,material.oak,-.88,.46,.35),box(.055,.70,.70,material.oak,.88,.46,.35),box(1.74,.045,.70,material.oak,0,.82,.35)
+ ],[0,-.08,0]);
+ for(let i=0;i<3;i++){
+  const x=-.58+i*.58;
+  parts(`Island drawer ${i+1}`,[box(.53,.66,.045,material.pale,x,.46,.755),box(.22,.022,.025,material.brass,x,.48,.79)],[0,0,.06]);
+ }
+ parts('Island worktop',[box(2.05,.10,1.02,material.stone,0,.91,.35),box(2.07,.018,1.04,material.white,0,.969,.35)],[0,.04,0]);
+ parts('Room reference floor',[box(5.2,.035,4.2,material.charcoal,0,-.035,-.05)]);
+ return root;
+}
+
 function makeDining(){
  const root=group();
  addPart(root,'Tabletop',[box(3.15,.16,1.55,material.oak,0,1.55,0),box(3.08,.025,1.48,material.pale,0,1.645,0)],[0,.4,0]);
@@ -136,12 +215,12 @@ function makeWardrobe(){
  addPart(root,'Toe kick',[box(2.72,.18,.72,material.charcoal,0,-1.68,0)],[0,-.1,0]);
  return root;
 }
-const builders={kitchen:makeKitchen,dining:makeDining,drawer:makeDrawer,wardrobe:makeWardrobe};
+const builders={kitchen:makeKitchen,fullkitchen:makeFullKitchen,dining:makeDining,drawer:makeDrawer,wardrobe:makeWardrobe};
 const meta={
  kitchen:{code:'CASEWORK STUDY / RV-001',title:'Kitchen island & countertop',desc:'Modular island assembly with stone-look worktop, carcass panels, drawer modules, cabinet fronts, hardware details, and adjustable feet.',focus:'Casework / Worktop',size:'Concept envelope · 3400 × 1740 × 1150 mm'},
  dining:{code:'FURNITURE STUDY / RV-002',title:'Dining table & chair set',desc:'Dining furniture set with a layered tabletop, apron rails, four-leg support structure, and coordinated chair assemblies with back rails and spindles.',focus:'Furniture / Joinery',size:'1600 × 800 × 760 mm'},
- drawer:{code:'CASEWORK STUDY / RV-003',title:'Four-drawer storage cabinet',desc:'Freestanding storage cabinet featuring a rigid carcass, four drawer boxes, front panels, pull handles, concealed runner zones, and plinth.',focus:'Drawer / Hardware',size:'1000 × 450 × 1100 mm'},
- wardrobe:{code:'MILLWORK STUDY / RV-004',title:'Built-in wardrobe system',desc:'Full-height wardrobe concept with paired slab doors, internal shelving, hanging rail, lower drawer module, top and bottom panels, and toe-kick.',focus:'Built-in / Storage',size:'1500 × 450 × 2100 mm'}
+ drawer:{code:'CASEWORK STUDY / RV-004',title:'Four-drawer storage cabinet',desc:'Freestanding storage cabinet featuring a rigid carcass, four drawer boxes, front panels, pull handles, concealed runner zones, and plinth.',focus:'Drawer / Hardware',size:'1000 × 450 × 1100 mm'},
+ wardrobe:{code:'MILLWORK STUDY / RV-005',title:'Built-in wardrobe system',desc:'Full-height wardrobe concept with paired slab doors, internal shelving, hanging rail, lower drawer module, top and bottom panels, and toe-kick.',focus:'Built-in / Storage',size:'1500 × 450 × 2100 mm'}
 };
 function createScene(canvas,builder,{autoRotate=false}={}){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
@@ -210,9 +289,11 @@ function createScene(canvas,builder,{autoRotate=false}={}){
  return {scene,get object(){return object},camera,controls,renderer,setView,setWire,setExploded,replaceObject,
   dispose(){cancelAnimationFrame(raf);ro.disconnect();controls.dispose();renderer.dispose()}};
 }
-function addDimensionOverlay(container,dimensions){
+function addDimensionOverlay(container,dimensions,key='kitchen'){
  let overlay=container.querySelector('.dimension-overlay');
- if(!overlay){overlay=document.createElement('div');overlay.className='dimension-overlay';overlay.innerHTML='<span class="dim dim-width">↔ <b>3400 mm · concept</b></span><span class="dim dim-height">↕ <b>1150 mm · concept</b></span><span class="dim dim-depth">↔ <b>1740 mm · concept</b></span>';container.appendChild(overlay)}
+ if(!overlay){overlay=document.createElement('div');overlay.className='dimension-overlay';container.appendChild(overlay)}
+ const labels=key==='fullkitchen'?['≈ 5200 mm · room footprint','≈ 2400 mm · model extent','≈ 4200 mm · room footprint']:key==='kitchen'?['≈ 3400 mm · concept','≈ 1100 mm · concept','≈ 1740 mm · concept']:['Illustrative width','Illustrative height','Illustrative depth'];
+ overlay.innerHTML=`<span class="dim dim-width">↔ <b>${labels[0]}</b></span><span class="dim dim-height">↕ <b>${labels[1]}</b></span><span class="dim dim-depth">↔ <b>${labels[2]}</b></span>`;
  overlay.classList.toggle('show',dimensions);
 }
 let hero,viewer;
@@ -226,13 +307,13 @@ try{
   const size=$('#project-size');if(size)size.textContent=data.size;
   viewer.replaceObject(builders[key]());
   viewer.setWire(false);viewer.setExploded(false);$('#wire-toggle')?.classList.remove('selected');$('#explode-toggle')?.classList.remove('selected');
-  addDimensionOverlay($('.viewer-canvas-wrap'),false);
+  addDimensionOverlay($('.viewer-canvas-wrap'),false,key);
  }
  tabs.forEach(tab=>tab.addEventListener('click',()=>selectModel(tab.dataset.model,tab)));
  document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b===btn));viewer.setView(btn.dataset.view)}));
  $('#wire-toggle')?.addEventListener('click',e=>{const on=!e.currentTarget.classList.contains('selected');e.currentTarget.classList.toggle('selected',on);viewer.setWire(on)});
  $('#explode-toggle')?.addEventListener('click',e=>{const on=!e.currentTarget.classList.contains('selected');e.currentTarget.classList.toggle('selected',on);viewer.setExploded(on)});
- $('#dims-toggle')?.addEventListener('click',e=>{const on=!e.currentTarget.classList.contains('selected');e.currentTarget.classList.toggle('selected',on);addDimensionOverlay($('.viewer-canvas-wrap'),on)});
+ $('#dims-toggle')?.addEventListener('click',e=>{const on=!e.currentTarget.classList.contains('selected');e.currentTarget.classList.toggle('selected',on);addDimensionOverlay($('.viewer-canvas-wrap'),on,$('.project-tab.active')?.dataset.model||'kitchen')});
 }catch(err){console.error('3D model setup error',err);document.querySelectorAll('.viewer-canvas-wrap,.model-stage').forEach(el=>el.classList.add('webgl-unavailable'))}
 const menu=$('.menu-toggle'),nav=$('.main-nav');menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open))});nav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
 $('#year').textContent=new Date().getFullYear();
