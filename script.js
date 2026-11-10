@@ -1,4 +1,4 @@
-// script.js — Fixed Camera, Split Database, Restored Hero
+// script.js — Fixed Upright Models & Split Database
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -26,7 +26,6 @@ function buildLighting(scene){
   const rim=new THREE.DirectionalLight(0xf29a43,1.1); rim.position.set(0,3,7); scene.add(rim);
 }
 
-// Restored fallback model for the Hero Section
 function makeFallbackKitchen(){
   const root=new THREE.Group();
   const g=(w,h,d,m,x=0,y=0,z=0)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;return o;};
@@ -146,16 +145,13 @@ function base64ToBlobUrl(dataUrl, mime){ if(!dataUrl) return ''; if(dataUrl.star
   try{
     const hero=createScene(canvas);
     hero.setObject(makeFallbackKitchen());
-  }catch(e){
-    console.error('Hero 3D error',e);
-    canvas.parentElement?.classList.add('webgl-unavailable');
-  }
+  }catch(e){ console.error('Hero 3D error',e); canvas.parentElement?.classList.add('webgl-unavailable'); }
 })();
 
 onAuthStateChanged(auth,user=>{ document.body.classList.toggle('is-admin',!!user); });
 
 /* ============================================================
-   PROJECTS (Split Meta & Data for Instant Load)
+   PROJECTS
    ============================================================ */
 const projectGrid=$('#project-grid');
 const detailOverlay=$('#project-detail');
@@ -234,7 +230,14 @@ async function openProject(id, metaData){
       detailScene=createScene($('#detail-model'));
       try{
         const buffer=base64ToArrayBuffer(heavyData.modelData);
-        gltfLoader.parse(buffer, '', gltf=>{ detailScene.setObject(gltf.scene); }, err=>{ console.error(err); });
+        gltfLoader.parse(buffer, '', 
+          gltf=>{ 
+            // FIX: Rotate the model upright (Z-up to Y-up conversion)
+            gltf.scene.rotation.x = -Math.PI / 2;
+            detailScene.setObject(gltf.scene); 
+          }, 
+          err=>{ console.error(err); }
+        );
       }catch(err){ console.error(err); }
     }
 
