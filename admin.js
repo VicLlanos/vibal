@@ -1,4 +1,4 @@
-// admin.js — With GLB Compression
+// admin.js — With GLB Compression + Safety Fallback
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { ref as dbRef, push, set, remove, onValue } from "firebase/database";
 import { auth, db } from "./firebase-config.js";
@@ -8,7 +8,6 @@ const escapeHtml=(str='')=>String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 
 const LIMITS = { GLB_MAX_BYTES: 5*1024*1024, DRAWING_MAX_BYTES: 2*1024*1024, RTDB_FREE_BYTES: 1024*1024*1024, WARN_AT: 0.70 };
 
-/* ============ AUTH & HELPERS ============ */
 document.querySelectorAll('.auth-tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.auth-tab').forEach(t=>t.classList.toggle('active',t===tab));
@@ -61,18 +60,20 @@ async function compressImage(file, maxDim=1200, quality=0.75){
   });
 }
 
-// NEW: Compress GLB using gltf-pipeline
+// GLB Compressor with safe fallback if library didn't load
 async function compressGLB(file) {
-  return new Promise((resolve, reject) => {
+  if (typeof GltfPipeline === 'undefined') {
+    console.warn('GLTF Pipeline not loaded — using raw upload.');
+    return await readFileAsDataURL(file);
+  }
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const arrayBuffer = e.target.result;
-        // Compress using Draco (reduces size by up to 90%)
         const results = await GltfPipeline.processGlb(arrayBuffer, {
           dracoOptions: { compressionLevel: 7 }
         });
-        // Convert the compressed ArrayBuffer back to a Base64 Data URL
         const blob = new Blob([results.glb], { type: 'model/gltf-binary' });
         const url = await new Promise(r => {
           const fr = new FileReader();
@@ -81,10 +82,11 @@ async function compressGLB(file) {
         });
         resolve(url);
       } catch (err) {
-        reject(err);
+        console.error('GLB compression failed, uploading raw:', err);
+        resolve(await readFileAsDataURL(file));
       }
     };
-    reader.onerror = reject;
+    reader.onerror = () => resolve(readFileAsDataURL(file));
     reader.readAsArrayBuffer(file);
   });
 }
@@ -106,27 +108,17 @@ onValue(dbRef(db,'projects_meta'), snap=>{
     let bytes=0;
     list.forEach(({data})=>{ bytes+=(data.thumbnailData?.length||0); }); 
     updateUsageMeter(bytes,list.length);
-
     if(!list.length){ projectListEl.innerHTML='<div class="empty">No projects yet.</div>'; return; }
     projectListEl.innerHTML=list.map(({id,data:p})=>`
       <div class="list-item" data-id="${id}">
         ${p.thumbnailData?`<img class="thumb" src="${p.thumbnailData}" alt="">`:''}
-        <div class="info">
-          <b>${escapeHtml(p.title||'Untitled')}</b>
-          <small>${escapeHtml(p.code||'')} · ${escapeHtml(p.focus||'')}</small>
-        </div>
-        <div class="actions">
-          <button class="danger" data-delete-project="${id}">Delete</button>
-        </div>
+        <div class="info"><b>${escapeHtml(p.title||'Untitled')}</b><small>${escapeHtml(p.code||'')} · ${escapeHtml(p.focus||'')}</small></div>
+        <div class="actions"><button class="danger" data-delete-project="${id}">Delete</button></div>
       </div>`).join('');
-    
     projectListEl.querySelectorAll('[data-delete-project]').forEach(btn=>{
       btn.addEventListener('click',async()=>{
         if(!confirm('Delete this project?'))return;
-        try{ 
-          await remove(dbRef(db,'projects_meta/'+btn.dataset.deleteProject)); 
-          await remove(dbRef(db,'projects_data/'+btn.dataset.deleteProject)); 
-        }
+        try{ await remove(dbRef(db,'projects_meta/'+btn.dataset.deleteProject)); await remove(dbRef(db,'projects_data/'+btn.dataset.deleteProject)); }
         catch(e){ alert('Delete failed: '+e.message); }
       });
     });
@@ -134,12 +126,10 @@ onValue(dbRef(db,'projects_meta'), snap=>{
   err=>{ projectListEl.innerHTML='<div class="empty">Load error.</div>'; }
 );
 
-/* Live file size notes */
 const glbInput=$('input[name="glb"]', $('#project-form')), drawingInput=$('input[name="drawing"]', $('#project-form'));
 glbInput?.addEventListener('change',()=>{ const f=glbInput.files[0]; $('#glb-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.GLB_MAX_BYTES?'⚠️ TOO LARGE':'✓ OK (will compress)'}`:''; });
 drawingInput?.addEventListener('change',()=>{ const f=drawingInput.files[0]; $('#drawing-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.DRAWING_MAX_BYTES?'⚠️ TOO LARGE':'✓ OK'}`:''; });
 
-/* ============ PROJECT UPLOAD ============ */
 $('#project-form').addEventListener('submit',async e=>{
   e.preventDefault();
   const form=e.target, fd=new FormData(form);
@@ -161,12 +151,10 @@ $('#project-form').addEventListener('submit',async e=>{
   try{
     let modelData='', drawingData='', drawingMime='', drawingType='', thumbnailData='';
 
-    // Compress and read GLB
     if(hasGlb){
-      setStatus('project-status','Compressing 3D Model (this may take a moment)...'); 
-      prog.update(15); 
-      modelData = await compressGLB(glbFile); 
-      prog.update(40); 
+      setStatus('project-status','Compressing 3D model…'); prog.update(15);
+      modelData = await compressGLB(glbFile);
+      prog.update(40);
     }
 
     if(hasDrawing){
@@ -176,27 +164,23 @@ $('#project-form').addEventListener('submit',async e=>{
       else{ drawingData=await compressImage(drawingFile,1600,0.82); drawingMime='image/jpeg'; drawingType='image'; }
       prog.update(hasGlb?70:50);
     }
+
     if(hasThumb){ setStatus('project-status','Compressing thumbnail…'); thumbnailData=await compressImage(thumbFile,600,0.75); prog.update(80); }
 
     setStatus('project-status','Saving to database…');
     const ts=Date.now();
-    const newRef=push(dbRef(db,'projects_meta')); 
-    const id=newRef.key;
+    const newRef=push(dbRef(db,'projects_meta')); const id=newRef.key;
 
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Database timed out. Check your connection.')), 15000));
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Database timed out.')), 15000));
 
-    // 1. Save Meta
     await Promise.race([
       set(dbRef(db,'projects_meta/'+id), {
         title, focus, description, code:`PROJECT / ${ts.toString(36).toUpperCase().slice(-6)}`,
-        thumbnailData, drawingType, 
-        hasModel: !!modelData, hasDrawing: !!drawingData,
-        createdAt: ts
+        thumbnailData, drawingType, hasModel: !!modelData, hasDrawing: !!drawingData, createdAt: ts
       }),
       timeout
     ]);
 
-    // 2. Save Heavy Data
     if(modelData || drawingData){
       await Promise.race([
         set(dbRef(db,'projects_data/'+id), { modelData, drawingData, drawingMime }),
@@ -218,13 +202,8 @@ onValue(dbRef(db,'experience'), snap=>{
     if(!list.length){ expListEl.innerHTML='<div class="empty">No experience records yet.</div>'; return; }
     expListEl.innerHTML=list.map(({id,data:x})=>`
       <div class="list-item" data-id="${id}">
-        <div class="info">
-          <b>${escapeHtml(x.company||'Company')}</b>
-          <small>${escapeHtml(x.role||'')} · ${escapeHtml(String(x.years||''))}${escapeHtml(x.yearsSuffix||'')} yrs${x.current?' · CURRENT':''}</small>
-        </div>
-        <div class="actions">
-          <button class="danger" data-delete-exp="${id}">Delete</button>
-        </div>
+        <div class="info"><b>${escapeHtml(x.company||'Company')}</b><small>${escapeHtml(x.role||'')} · ${escapeHtml(String(x.years||''))}${escapeHtml(x.yearsSuffix||'')} yrs${x.current?' · CURRENT':''}</small></div>
+        <div class="actions"><button class="danger" data-delete-exp="${id}">Delete</button></div>
       </div>`).join('');
     expListEl.querySelectorAll('[data-delete-exp]').forEach(btn=>{
       btn.addEventListener('click',async()=>{
@@ -234,7 +213,7 @@ onValue(dbRef(db,'experience'), snap=>{
       });
     });
   },
-  err=>{ console.error(err); expListEl.innerHTML='<div class="empty">Load error.</div>'; }
+  err=>{ expListEl.innerHTML='<div class="empty">Load error.</div>'; }
 );
 
 $('#experience-form').addEventListener('submit',async e=>{
@@ -246,21 +225,12 @@ $('#experience-form').addEventListener('submit',async e=>{
     setStatus('experience-status','Saving…');
     const newRef=push(dbRef(db,'experience'));
     await set(newRef,{
-      company,
-      role:(fd.get('role')||'').toString().trim(),
-      years:Number(fd.get('years')||0)||'',
-      yearsSuffix:(fd.get('yearsSuffix')||'').toString().trim(),
-      yearsLabel:(fd.get('yearsLabel')||'').toString().trim(),
-      current:(fd.get('current')||'no').toString()==='yes',
-      description:(fd.get('description')||'').toString().trim(),
-      createdAt:Date.now()
+      company, role:(fd.get('role')||'').toString().trim(), years:Number(fd.get('years')||0)||'',
+      yearsSuffix:(fd.get('yearsSuffix')||'').toString().trim(), yearsLabel:(fd.get('yearsLabel')||'').toString().trim(),
+      current:(fd.get('current')||'no').toString()==='yes', description:(fd.get('description')||'').toString().trim(), createdAt:Date.now()
     });
-    setStatus('experience-status','Experience added ✓','ok');
-    e.target.reset();
-  }catch(err){
-    console.error(err);
-    setStatus('experience-status','Failed: '+err.message,'error');
-  }
+    setStatus('experience-status','Experience added ✓','ok'); e.target.reset();
+  }catch(err){ setStatus('experience-status','Failed: '+err.message,'error'); }
 });
 
 /* ============ CERTIFICATIONS ============ */
@@ -271,13 +241,8 @@ onValue(dbRef(db,'certifications'), snap=>{
     certListEl.innerHTML=list.map(({id,data:c})=>`
       <div class="list-item" data-id="${id}">
         ${c.imageData?`<img class="thumb" src="${c.imageData}" alt="">`:''}
-        <div class="info">
-          <b>${escapeHtml(c.title||'Certification')}</b>
-          <small>${escapeHtml(c.issuer||'')} · ${formatBytes(c.imageData?.length||0)}</small>
-        </div>
-        <div class="actions">
-          <button class="danger" data-delete-cert="${id}">Delete</button>
-        </div>
+        <div class="info"><b>${escapeHtml(c.title||'Certification')}</b><small>${escapeHtml(c.issuer||'')} · ${formatBytes(c.imageData?.length||0)}</small></div>
+        <div class="actions"><button class="danger" data-delete-cert="${id}">Delete</button></div>
       </div>`).join('');
     certListEl.querySelectorAll('[data-delete-cert]').forEach(btn=>{
       btn.addEventListener('click',async()=>{
@@ -287,7 +252,7 @@ onValue(dbRef(db,'certifications'), snap=>{
       });
     });
   },
-  err=>{ console.error(err); certListEl.innerHTML='<div class="empty">Load error.</div>'; }
+  err=>{ certListEl.innerHTML='<div class="empty">Load error.</div>'; }
 );
 
 $('#cert-form').addEventListener('submit',async e=>{
@@ -302,27 +267,11 @@ $('#cert-form').addEventListener('submit',async e=>{
 
   const prog=progressController('cert-progress');
   try{
-    setStatus('cert-status','Compressing image…');
-    prog.update(30);
-    const imageData=await compressImage(imageFile,1200,0.78);
-    prog.update(75);
-
+    setStatus('cert-status','Compressing image…'); prog.update(30);
+    const imageData=await compressImage(imageFile,1200,0.78); prog.update(75);
     setStatus('cert-status','Saving to Realtime Database…');
     const newRef=push(dbRef(db,'certifications'));
-    await set(newRef,{
-      title,
-      issuer,
-      imageData,
-      createdAt:Date.now()
-    });
-    prog.update(100);
-
-    setStatus('cert-status','Certification added ✓','ok');
-    e.target.reset();
-    prog.done();
-  }catch(err){
-    console.error(err);
-    setStatus('cert-status','Upload failed: '+err.message,'error');
-    prog.done();
-  }
+    await set(newRef,{ title, issuer, imageData, createdAt:Date.now() });
+    prog.update(100); setStatus('cert-status','Certification added ✓','ok'); e.target.reset(); prog.done();
+  }catch(err){ setStatus('cert-status','Upload failed: '+err.message,'error'); prog.done(); }
 });
