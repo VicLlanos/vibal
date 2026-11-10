@@ -1,17 +1,17 @@
-// admin.js — Realtime Database + Base64 (no Firebase Storage)
+// admin.js — Realtime Database + Base64 + self-registration
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile
 } from "firebase/auth";
 import {
   ref as dbRef,
   push,
   set,
   remove,
-  onValue,
-  get,
-  child
+  onValue
 } from "firebase/database";
 import { auth, db } from "./firebase-config.js";
 
@@ -19,19 +19,166 @@ const $ = (s,root=document)=>root.querySelector(s);
 const escapeHtml=(str='')=>String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ============================================================
-   LIMITS (RTDB hard limits: 10 MB single string, 16 MB write)
+   LIMITS
    ============================================================ */
 const LIMITS = {
-  GLB_MAX_BYTES: 5 * 1024 * 1024,        // 5 MB raw → ~6.7 MB base64
-  DRAWING_MAX_BYTES: 2 * 1024 * 1024,    // 2 MB raw → ~2.7 MB base64
-  THUMB_MAX_BYTES: 300 * 1024,           // 300 KB raw → ~400 KB base64
-  CERT_MAX_BYTES: 300 * 1024,            // 300 KB raw → ~400 KB base64
-  RTDB_FREE_BYTES: 1024 * 1024 * 1024,   // 1 GB free tier
-  WARN_AT: 0.70                          // warn at 70% usage
+  GLB_MAX_BYTES: 5 * 1024 * 1024,
+  DRAWING_MAX_BYTES: 2 * 1024 * 1024,
+  RTDB_FREE_BYTES: 1024 * 1024 * 1024,
+  WARN_AT: 0.70
 };
 
 /* ============================================================
-   FILE READERS
+   AUTH TABS
+   ============================================================ */
+document.querySelectorAll('.auth-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.auth-tab').forEach(t=>t.classList.toggle('active',t===tab));
+    document.querySelectorAll('.auth-pane').forEach(p=>p.classList.remove('active'));
+    const pane=$('#pane-'+tab.dataset.tab);
+    if(pane) pane.classList.add('active');
+  });
+});
+
+/* ============================================================
+   AUTH STATE
+   ============================================================ */
+const gate=$('#auth-gate');
+const panel=$('#admin-panel');
+
+onAuthStateChanged(auth,user=>{
+  if(user){
+    gate.hidden=true;
+    panel.hidden=false;
+    const emailEl=$('#logged-email');
+    if(emailEl) emailEl.textContent=user.email || user.uid;
+  }else{
+    gate.hidden=false;
+    panel.hidden=true;
+  }
+});
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+const loginBtn=$('#login-btn');
+const loginStatus=$('#login-status');
+
+loginBtn.addEventListener('click',async()=>{
+  const email=$('#login-email').value.trim();
+  const pass=$('#login-pass').value;
+  if(!email||!pass){ loginStatus.textContent='Enter email and password.'; loginStatus.className='status error'; return; }
+  loginBtn.disabled=true;
+  loginStatus.textContent='Signing in…';
+  loginStatus.className='status';
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+    loginStatus.textContent='';
+    $('#login-pass').value='';
+  }catch(e){
+    console.error(e);
+    loginStatus.textContent=humanizeAuthError(e);
+    loginStatus.className='status error';
+  }finally{
+    loginBtn.disabled=false;
+  }
+});
+
+/* ============================================================
+   REGISTRATION
+   ============================================================ */
+const registerBtn=$('#register-btn');
+const registerStatus=$('#register-status');
+
+registerBtn.addEventListener('click',async()=>{
+  const name=$('#reg-name').value.trim();
+  const email=$('#reg-email').value.trim();
+  const pass=$('#reg-pass').value;
+  const pass2=$('#reg-pass2').value;
+
+  if(!email){ registerStatus.textContent='Email is required.'; registerStatus.className='status error'; return; }
+  if(!pass||pass.length<6){ registerStatus.textContent='Password must be at least 6 characters.'; registerStatus.className='status error'; return; }
+  if(pass!==pass2){ registerStatus.textContent='Passwords do not match.'; registerStatus.className='status error'; return; }
+
+  registerBtn.disabled=true;
+  registerStatus.textContent='Creating account…';
+  registerStatus.className='status';
+
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    if(name && cred.user){
+      try{ await updateProfile(cred.user,{displayName:name}); }catch(_){}
+    }
+    registerStatus.textContent='Account created — signing in…';
+    registerStatus.className='status ok';
+    $('#reg-name').value='';
+    $('#reg-email').value='';
+    $('#reg-pass').value='';
+    $('#reg-pass2').value='';
+  }catch(e){
+    console.error(e);
+    registerStatus.textContent=humanizeAuthError(e);
+    registerStatus.className='status error';
+  }finally{
+    registerBtn.disabled=false;
+  }
+});
+
+function humanizeAuthError(e){
+  const code=e?.code||'';
+  const map={
+    'auth/email-already-in-use':'This email is already registered. Try signing in instead.',
+    'auth/invalid-email':'That email address is not valid.',
+    'auth/weak-password':'Password is too weak. Use at least 6 characters.',
+    'auth/user-not-found':'No account found with that email. Create one first.',
+    'auth/wrong-password':'Wrong password. Try again.',
+    'auth/invalid-credential':'Wrong email or password.',
+    'auth/too-many-requests':'Too many attempts. Please wait a minute and try again.',
+    'auth/network-request-failed':'Network error. Check your connection.',
+    'auth/operation-not-allowed':'Email/password sign-in is not enabled in Firebase Console.'
+  };
+  return map[code] || (e?.message || 'Something went wrong.');
+}
+
+/* ============================================================
+   LOGOUT
+   ============================================================ */
+$('#logout-btn')?.addEventListener('click',async()=>{ await signOut(auth); });
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function setStatus(id,msg,type=''){
+  const el=$('#'+id);
+  if(!el) return;
+  el.textContent=msg;
+  el.className='status'+(type?` ${type}`:'');
+}
+function progressController(wrapId){
+  const wrap=$('#'+wrapId);
+  if(!wrap) return { update(){}, done(){} };
+  const bar=wrap.querySelector('div');
+  wrap.hidden=false;
+  return {
+    update(pct){ bar.style.width=pct+'%'; },
+    done(){ setTimeout(()=>{wrap.hidden=true;bar.style.width='0';},800); }
+  };
+}
+function snapshotToArray(snap){
+  const val=snap.val()||{};
+  return Object.entries(val)
+    .map(([id,data])=>({id,data:data||{}}))
+    .sort((a,b)=>(b.data.createdAt||0)-(a.data.createdAt||0));
+}
+function formatBytes(b){
+  if(b<1024) return b+' B';
+  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
+  if(b<1024*1024*1024) return (b/1024/1024).toFixed(2)+' MB';
+  return (b/1024/1024/1024).toFixed(2)+' GB';
+}
+
+/* ============================================================
+   FILE HELPERS
    ============================================================ */
 function readFileAsDataURL(file){
   return new Promise((resolve,reject)=>{
@@ -42,7 +189,6 @@ function readFileAsDataURL(file){
   });
 }
 
-/* Compress an image file → JPEG dataURL at target size */
 async function compressImage(file, maxDim=1200, quality=0.75){
   return new Promise((resolve,reject)=>{
     const img=new Image();
@@ -60,90 +206,17 @@ async function compressImage(file, maxDim=1200, quality=0.75){
       ctx.fillStyle='#111820';
       ctx.fillRect(0,0,w,h);
       ctx.drawImage(img,0,0,w,h);
-      try{
-        resolve(canvas.toDataURL('image/jpeg',quality));
-      }catch(e){ reject(e); }
+      try{ resolve(canvas.toDataURL('image/jpeg',quality)); }
+      catch(e){ reject(e); }
     };
     img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image decode failed'));};
     img.src=url;
   });
 }
 
-function formatBytes(b){
-  if(b<1024) return b+' B';
-  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
-  if(b<1024*1024*1024) return (b/1024/1024).toFixed(2)+' MB';
-  return (b/1024/1024/1024).toFixed(2)+' GB';
-}
-
-/* ============================================================
-   AUTH
-   ============================================================ */
-const gate=$('#auth-gate');
-const panel=$('#admin-panel');
-const loginBtn=$('#login-btn');
-const loginStatus=$('#login-status');
-
-loginBtn.addEventListener('click',async()=>{
-  const email=$('#login-email').value.trim();
-  const pass=$('#login-pass').value;
-  if(!email||!pass){ loginStatus.textContent='Enter email and password.'; loginStatus.className='status error'; return; }
-  loginBtn.disabled=true;loginStatus.textContent='Signing in…';loginStatus.className='status';
-  try{
-    await signInWithEmailAndPassword(auth,email,pass);
-    loginStatus.textContent='';
-  }catch(e){
-    console.error(e);
-    loginStatus.textContent='Sign-in failed: '+e.message;
-    loginStatus.className='status error';
-  }finally{loginBtn.disabled=false;}
-});
-
-onAuthStateChanged(auth,user=>{
-  if(user){ gate.hidden=true; panel.hidden=false; }
-  else{ gate.hidden=false; panel.hidden=true; }
-});
-
-$('#logout-btn')?.addEventListener('click',async()=>{ await signOut(auth); });
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
-function setStatus(id,msg,type=''){
-  const el=$('#'+id);
-  el.textContent=msg;
-  el.className='status'+(type?` ${type}`:'');
-}
-function progressController(wrapId){
-  const wrap=$('#'+wrapId);
-  const bar=wrap.querySelector('div');
-  wrap.hidden=false;
-  return {
-    update(pct){ bar.style.width=pct+'%'; },
-    done(){ setTimeout(()=>{wrap.hidden=true;bar.style.width='0';},800); }
-  };
-}
-function snapshotToArray(snap){
-  const val=snap.val()||{};
-  return Object.entries(val)
-    .map(([id,data])=>({id,data:data||{}}))
-    .sort((a,b)=>(b.data.createdAt||0)-(a.data.createdAt||0));
-}
-
 /* ============================================================
    USAGE METER
    ============================================================ */
-function computeApproxUsage(){
-  const snapProjects=$('#projects-list');
-  const snapCerts=$('#certs-list');
-  let totalBytes=0;
-  // We estimate from the raw JSON we already have in DOM via data attributes
-  totalBytes+=Number(snapProjects?.dataset.bytes||0);
-  totalBytes+=Number(snapCerts?.dataset.bytes||0);
-  // Experience is tiny — ignore
-  return totalBytes;
-}
-
 function updateUsageMeter(totalBytes, projectCount){
   const pct=Math.min(100,(totalBytes/LIMITS.RTDB_FREE_BYTES)*100);
   const fill=$('#usage-fill');
@@ -160,24 +233,19 @@ function updateUsageMeter(totalBytes, projectCount){
 }
 
 /* ============================================================
-   PROJECTS LIST
+   PROJECTS
    ============================================================ */
 const projectListEl=$('#projects-list');
-let totalApproxBytes=0;
-let projectCount=0;
 
 onValue(
   dbRef(db,'projects'),
   snap=>{
     const list=snapshotToArray(snap);
-    projectCount=list.length;
     let bytes=0;
     list.forEach(({data})=>{
       bytes+=(data.modelData?.length||0)+(data.drawingData?.length||0)+(data.thumbnailData?.length||0);
     });
-    totalApproxBytes=bytes;
-    updateUsageMeter(totalApproxBytes,projectCount);
-    projectListEl.dataset.bytes=String(bytes);
+    updateUsageMeter(bytes,list.length);
 
     if(!list.length){ projectListEl.innerHTML='<div class="empty">No projects yet.</div>'; return; }
     projectListEl.innerHTML=list.map(({id,data:p})=>`
@@ -207,11 +275,15 @@ const glbInput=$('input[name="glb"]', $('#project-form'));
 const drawingInput=$('input[name="drawing"]', $('#project-form'));
 glbInput?.addEventListener('change',()=>{
   const f=glbInput.files[0];
-  $('#glb-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.GLB_MAX_BYTES?'⚠️ TOO LARGE (max 5 MB)':'✓ OK'}`:'';
+  const note=$('#glb-size-note');
+  if(!note) return;
+  note.textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.GLB_MAX_BYTES?'⚠️ TOO LARGE (max 5 MB)':'✓ OK'}`:'';
 });
 drawingInput?.addEventListener('change',()=>{
   const f=drawingInput.files[0];
-  $('#drawing-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.DRAWING_MAX_BYTES?'⚠️ TOO LARGE (max 2 MB)':'✓ OK'}`:'';
+  const note=$('#drawing-size-note');
+  if(!note) return;
+  note.textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.DRAWING_MAX_BYTES?'⚠️ TOO LARGE (max 2 MB)':'✓ OK'}`:'';
 });
 
 /* ============================================================
@@ -228,17 +300,14 @@ $('#project-form').addEventListener('submit',async e=>{
   const drawingFile=fd.get('drawing');
   const thumbFile=fd.get('thumbnail');
 
-  // Validate
   if(!title){ setStatus('project-status','Title is required.','error'); return; }
   if(!glbFile||!glbFile.size){ setStatus('project-status','GLB model file is required.','error'); return; }
   if(glbFile.size>LIMITS.GLB_MAX_BYTES){
-    setStatus('project-status',`GLB too large (${formatBytes(glbFile.size)}). Max 5 MB.`,'error');
-    return;
+    setStatus('project-status',`GLB too large (${formatBytes(glbFile.size)}). Max 5 MB.`,'error'); return;
   }
   if(!drawingFile||!drawingFile.size){ setStatus('project-status','Technical drawing is required.','error'); return; }
   if(drawingFile.size>LIMITS.DRAWING_MAX_BYTES){
-    setStatus('project-status',`Drawing too large (${formatBytes(drawingFile.size)}). Max 2 MB.`,'error');
-    return;
+    setStatus('project-status',`Drawing too large (${formatBytes(drawingFile.size)}). Max 2 MB.`,'error'); return;
   }
 
   const submitBtn=$('#project-submit');
@@ -246,13 +315,11 @@ $('#project-form').addEventListener('submit',async e=>{
   const prog=progressController('project-progress');
 
   try{
-    // 1) GLB → Base64
     setStatus('project-status','Reading GLB model…');
     prog.update(10);
     const glbData=await readFileAsDataURL(glbFile);
     prog.update(40);
 
-    // 2) Drawing → Base64 (PDF stays as-is; images get compressed)
     setStatus('project-status','Processing technical drawing…');
     const isPdf=(drawingFile.type==='application/pdf')||/\.pdf$/i.test(drawingFile.name);
     let drawingData, drawingMime, drawingType;
@@ -261,14 +328,12 @@ $('#project-form').addEventListener('submit',async e=>{
       drawingMime='application/pdf';
       drawingType='pdf';
     }else{
-      const compressed=await compressImage(drawingFile,1600,0.82);
-      drawingData=compressed;
+      drawingData=await compressImage(drawingFile,1600,0.82);
       drawingMime='image/jpeg';
       drawingType='image';
     }
     prog.update(70);
 
-    // 3) Optional thumbnail
     let thumbnailData='';
     if(thumbFile&&thumbFile.size){
       setStatus('project-status','Compressing thumbnail…');
@@ -276,7 +341,6 @@ $('#project-form').addEventListener('submit',async e=>{
     }
     prog.update(85);
 
-    // 4) Save
     setStatus('project-status','Saving to Realtime Database…');
     const ts=Date.now();
     const newRef=push(dbRef(db,'projects'));
@@ -294,8 +358,8 @@ $('#project-form').addEventListener('submit',async e=>{
 
     setStatus('project-status','Project published ✓','ok');
     form.reset();
-    $('#glb-size-note').textContent='';
-    $('#drawing-size-note').textContent='';
+    const glbNote=$('#glb-size-note'); if(glbNote) glbNote.textContent='';
+    const drNote=$('#drawing-size-note'); if(drNote) drNote.textContent='';
     prog.done();
   }catch(err){
     console.error(err);
@@ -307,7 +371,7 @@ $('#project-form').addEventListener('submit',async e=>{
 });
 
 /* ============================================================
-   EXPERIENCE LIST
+   EXPERIENCE
    ============================================================ */
 const expListEl=$('#experience-list');
 onValue(
@@ -363,7 +427,7 @@ $('#experience-form').addEventListener('submit',async e=>{
 });
 
 /* ============================================================
-   CERTIFICATIONS LIST
+   CERTIFICATIONS
    ============================================================ */
 const certListEl=$('#certs-list');
 onValue(

@@ -40,7 +40,13 @@
   .list-item b{font-size:14px}
   .list-item small{display:block;color:#819096;font-size:10px;font-family:var(--mono)}
   .list-item .actions{display:flex;gap:8px;flex-shrink:0}
-  .auth-gate{padding:40px;border:1px solid #34434a;background:var(--panel);max-width:440px;margin:60px auto;text-align:center}
+  .auth-gate{padding:36px;border:1px solid #34434a;background:var(--panel);max-width:480px;margin:60px auto}
+  .auth-tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid var(--line)}
+  .auth-tab{flex:1;background:transparent;color:#8c9a9e;border:0;border-bottom:2px solid transparent;padding:12px;font:600 13px var(--body);cursor:pointer;margin:0;transition:.2s}
+  .auth-tab:hover{color:var(--ink)}
+  .auth-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+  .auth-pane{display:none}
+  .auth-pane.active{display:block}
   .status{font:11px var(--mono);color:var(--orange2);margin-top:12px;min-height:16px}
   .status.error{color:#f07070}
   .status.ok{color:#7fd17f}
@@ -52,15 +58,13 @@
   .progress{height:4px;background:#2a3941;margin-top:10px;overflow:hidden}
   .progress>div{height:100%;background:var(--orange);width:0;transition:width .2s}
   .empty{color:#6b7d83;font:10px var(--mono);padding:16px 0}
-
-  /* Usage meter */
   .usage-box{border:1px solid var(--line);background:var(--panel);padding:16px 18px;margin-top:20px}
   .usage-box .head{display:flex;justify-content:space-between;font:10px var(--mono);letter-spacing:.1em;color:var(--muted);margin-bottom:8px}
-  .usage-bar{height:10px;background:#0e151b;border:1px solid var(--line);overflow:hidden;position:relative}
+  .usage-bar{height:10px;background:#0e151b;border:1px solid var(--line);overflow:hidden}
   .usage-bar>div{height:100%;background:linear-gradient(90deg,#4caf50,#f29a43);width:0;transition:width .3s}
   .usage-bar.warn>div{background:linear-gradient(90deg,#f29a43,#e74c3c)}
   .usage-detail{font:10px var(--mono);color:#819096;margin-top:8px;display:flex;justify-content:space-between}
-
+  .logged-banner{background:rgba(242,154,67,.08);border:1px solid rgba(242,154,67,.3);padding:10px 16px;margin-bottom:20px;font:11px var(--mono);color:var(--orange2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
   @media(max-width:760px){.row,.row-3{grid-template-columns:1fr}body{padding:24px 5% 60px}}
 </style>
 </head>
@@ -71,18 +75,52 @@
   <a href="index.html">← Back to site</a>
 </div>
 
+<!-- ============= AUTH GATE ============= -->
 <div id="auth-gate" class="auth-gate">
-  <h3 style="margin-top:0">Sign in</h3>
-  <label>Email</label>
-  <input type="email" id="login-email" autocomplete="username" placeholder="you@example.com">
-  <label>Password</label>
-  <input type="password" id="login-pass" autocomplete="current-password">
-  <button id="login-btn">Sign in</button>
-  <div class="status" id="login-status"></div>
-  <p class="hint">Only accounts allowed by RTDB rules can write data.</p>
+
+  <div class="auth-tabs">
+    <button class="auth-tab active" data-tab="login">Sign in</button>
+    <button class="auth-tab" data-tab="register">Create account</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="auth-pane active" id="pane-login">
+    <h3 style="margin-top:0">Welcome back</h3>
+    <label>Email</label>
+    <input type="email" id="login-email" autocomplete="username" placeholder="rodel@example.com">
+    <label>Password</label>
+    <input type="password" id="login-pass" autocomplete="current-password">
+    <button id="login-btn" style="width:100%">Sign in</button>
+    <div class="status" id="login-status"></div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="auth-pane" id="pane-register">
+    <h3 style="margin-top:0">Create your account</h3>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">
+      Use the email address that's whitelisted in the database rules. Only that email can upload content.
+    </p>
+    <label>Full name</label>
+    <input type="text" id="reg-name" autocomplete="name" placeholder="Rodel Vibal">
+    <label>Email</label>
+    <input type="email" id="reg-email" autocomplete="email" placeholder="rodel@example.com">
+    <label>Password (min. 6 characters)</label>
+    <input type="password" id="reg-pass" autocomplete="new-password">
+    <label>Confirm password</label>
+    <input type="password" id="reg-pass2" autocomplete="new-password">
+    <button id="register-btn" style="width:100%">Create account</button>
+    <div class="status" id="register-status"></div>
+  </div>
+
 </div>
 
+<!-- ============= ADMIN PANEL ============= -->
 <div id="admin-panel" hidden>
+
+  <div class="logged-banner">
+    <span>Signed in as <b id="logged-email">—</b></span>
+    <button class="ghost" id="logout-btn" style="margin:0;padding:6px 12px;font-size:11px">Sign out</button>
+  </div>
 
   <!-- Usage meter -->
   <div class="usage-box">
@@ -178,11 +216,6 @@
       <div class="progress" id="cert-progress" hidden><div></div></div>
       <div class="status" id="cert-status"></div>
     </form>
-  </section>
-
-  <section>
-    <h2>Session</h2>
-    <button class="ghost" id="logout-btn">Sign out</button>
   </section>
 
 </div>
