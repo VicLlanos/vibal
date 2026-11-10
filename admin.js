@@ -278,13 +278,20 @@ $('#project-form').addEventListener('submit',async e=>{
   const drawingFile=fd.get('drawing');
   const thumbFile=fd.get('thumbnail');
 
-  if(!title){ setStatus('project-status','Title is required.','error'); return; }
-  if(!glbFile||!glbFile.size){ setStatus('project-status','GLB model file is required.','error'); return; }
-  if(glbFile.size>LIMITS.GLB_MAX_BYTES){
+  const hasGlb   = glbFile   && glbFile.size   > 0;
+  const hasDrawing = drawingFile && drawingFile.size > 0;
+  const hasThumb = thumbFile && thumbFile.size > 0;
+
+  if(!title){
+    setStatus('project-status','Title is required.','error'); return;
+  }
+  if(!hasGlb && !hasDrawing && !hasThumb){
+    setStatus('project-status','Please upload at least one of: GLB model, technical drawing, or thumbnail image.','error'); return;
+  }
+  if(hasGlb && glbFile.size>LIMITS.GLB_MAX_BYTES){
     setStatus('project-status',`GLB too large (${formatBytes(glbFile.size)}). Max 5 MB.`,'error'); return;
   }
-  if(!drawingFile||!drawingFile.size){ setStatus('project-status','Technical drawing is required.','error'); return; }
-  if(drawingFile.size>LIMITS.DRAWING_MAX_BYTES){
+  if(hasDrawing && drawingFile.size>LIMITS.DRAWING_MAX_BYTES){
     setStatus('project-status',`Drawing too large (${formatBytes(drawingFile.size)}). Max 2 MB.`,'error'); return;
   }
 
@@ -293,39 +300,48 @@ $('#project-form').addEventListener('submit',async e=>{
   const prog=progressController('project-progress');
 
   try{
-    setStatus('project-status','Reading GLB model…');
-    prog.update(10);
-    const glbData=await readFileAsDataURL(glbFile);
-    prog.update(40);
-
-    setStatus('project-status','Processing technical drawing…');
-    const isPdf=(drawingFile.type==='application/pdf')||/\.pdf$/i.test(drawingFile.name);
-    let drawingData, drawingMime, drawingType;
-    if(isPdf){
-      drawingData=await readFileAsDataURL(drawingFile);
-      drawingMime='application/pdf';
-      drawingType='pdf';
-    }else{
-      drawingData=await compressImage(drawingFile,1600,0.82);
-      drawingMime='image/jpeg';
-      drawingType='image';
+    // 1) GLB (optional)
+    let modelData='';
+    if(hasGlb){
+      setStatus('project-status','Reading GLB model…');
+      prog.update(15);
+      modelData=await readFileAsDataURL(glbFile);
+      prog.update(40);
     }
-    prog.update(70);
 
+    // 2) Drawing (optional)
+    let drawingData='', drawingMime='', drawingType='';
+    if(hasDrawing){
+      setStatus('project-status','Processing technical drawing…');
+      const isPdf=(drawingFile.type==='application/pdf')||/\.pdf$/i.test(drawingFile.name);
+      if(isPdf){
+        drawingData=await readFileAsDataURL(drawingFile);
+        drawingMime='application/pdf';
+        drawingType='pdf';
+      }else{
+        drawingData=await compressImage(drawingFile,1600,0.82);
+        drawingMime='image/jpeg';
+        drawingType='image';
+      }
+      prog.update(hasGlb?70:50);
+    }
+
+    // 3) Thumbnail (optional)
     let thumbnailData='';
-    if(thumbFile&&thumbFile.size){
+    if(hasThumb){
       setStatus('project-status','Compressing thumbnail…');
       thumbnailData=await compressImage(thumbFile,600,0.75);
+      prog.update(80);
     }
-    prog.update(85);
 
+    // 4) Save
     setStatus('project-status','Saving to Realtime Database…');
     const ts=Date.now();
     const newRef=push(dbRef(db,'projects'));
     await set(newRef,{
       title,focus,description,
       code:`PROJECT / ${ts.toString(36).toUpperCase().slice(-6)}`,
-      modelData:glbData,
+      modelData,
       drawingData,
       drawingMime,
       drawingType,
