@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- GLB Compressor Library -->
+<script src="https://cdn.jsdelivr.net/npm/gltf-pipeline@4.0.1/dist/gltf-pipeline-browser.min.js"></script>
+
 <script type="importmap">
 {
   "imports": {
@@ -16,7 +20,6 @@
   }
 }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/gltf-pipeline@4.1.0/dist/gltf-pipeline-browser.min.js"></script>
 <style>
   :root{--bg:#111820;--panel:#17222a;--line:#3c4b52;--ink:#edf0ed;--muted:#8bb5c2;--orange:#f29a43;--orange2:#ffc078;--mono:"DM Mono",monospace;--display:"Barlow Condensed",sans-serif;--body:"Manrope",sans-serif}
   *{box-sizing:border-box}
@@ -76,9 +79,7 @@
   <a href="index.html">← Back to site</a>
 </div>
 
-<!-- AUTH GATE -->
 <div id="auth-gate" class="auth-gate">
-
   <div class="auth-tabs">
     <button class="auth-tab active" data-tab="login">Sign in</button>
     <button class="auth-tab" data-tab="register">Create account</button>
@@ -96,9 +97,7 @@
 
   <div class="auth-pane" id="pane-register">
     <h3 style="margin-top:0">Create your account</h3>
-    <p class="hint" style="margin-top:0;margin-bottom:10px">
-      Use the email address that is whitelisted in the database rules. Only that email can upload content.
-    </p>
+    <p class="hint" style="margin-top:0;margin-bottom:10px">Use the email address that is whitelisted in the database rules.</p>
     <label>Full name</label>
     <input type="text" id="reg-name" autocomplete="name" placeholder="Rodel Vibal">
     <label>Email</label>
@@ -110,93 +109,71 @@
     <button id="register-btn" style="width:100%">Create account</button>
     <div class="status" id="register-status"></div>
   </div>
-
 </div>
 
-<!-- ADMIN PANEL -->
 <div id="admin-panel" hidden>
-
   <div class="logged-banner">
     <span>Signed in as <b id="logged-email">—</b></span>
     <button class="ghost" id="logout-btn" style="margin:0;padding:6px 12px;font-size:11px">Sign out</button>
   </div>
 
   <div class="usage-box">
-    <div class="head">
-      <span>RTDB USAGE</span>
-      <span id="usage-pct">— %</span>
-    </div>
+    <div class="head"><span>RTDB USAGE</span><span id="usage-pct">— %</span></div>
     <div class="usage-bar" id="usage-bar"><div id="usage-fill"></div></div>
-    <div class="usage-detail">
-      <span id="usage-bytes">— / 1 GB</span>
-      <span id="usage-projects">— projects</span>
-    </div>
+    <div class="usage-detail"><span id="usage-bytes">— / 1 GB</span><span id="usage-projects">— projects</span></div>
   </div>
 
   <section>
-    <h2>📦 Projects (GLB + Technical Drawing)</h2>
-    <p class="hint" style="color:#f29a43">
-      ⚠️ Files are stored as Base64 inside Realtime Database.
-      Limits: GLB ≤ 5 MB · Drawing ≤ 2 MB. Images are auto-compressed.
-    </p>
+    <h2>📦 Projects</h2>
+    <p class="hint" style="color:#f29a43">⚠️ Files are stored as Base64. Limits: GLB ≤ 5 MB · Drawing ≤ 2 MB.</p>
     <div id="projects-list"></div>
 
     <h3>Add new project</h3>
-<form id="project-form">
-  <div class="row">
-    <div><label>Title *</label><input name="title" required placeholder="Kitchen island"></div>
-    <div><label>Focus / tag</label><input name="focus" placeholder="Casework / Worktop"></div>
-  </div>
-  <label>Description</label>
-  <textarea name="description" placeholder="Short description shown in the detail view"></textarea>
-
-  <div class="hint" style="color:#f29a43;margin-top:20px;margin-bottom:8px">
-    Provide <b>at least one</b> of these three files. You don't need all of them.
-  </div>
-
-  <div class="row">
-    <div>
-      <label>GLB model file (.glb) — max 5 MB</label>
-      <input type="file" name="glb" accept=".glb,model/gltf-binary">
-      <div class="file-note" id="glb-size-note"></div>
-    </div>
-    <div>
-      <label>Technical drawing (PDF or image) — max 2 MB</label>
-      <input type="file" name="drawing" accept=".pdf,image/*">
-      <div class="file-note" id="drawing-size-note"></div>
-    </div>
-  </div>
-
-  <label>Thumbnail / cover image (image — auto-compressed to ~80 KB)</label>
-  <input type="file" name="thumbnail" accept="image/*">
-
-  <button type="submit" id="project-submit">Publish project</button>
-  <div class="progress" id="project-progress" hidden><div></div></div>
-  <div class="status" id="project-status"></div>
-</form>
+    <form id="project-form">
+      <div class="row">
+        <div><label>Title *</label><input name="title" required placeholder="Kitchen island"></div>
+        <div><label>Focus / tag</label><input name="focus" placeholder="Casework / Worktop"></div>
+      </div>
+      <label>Description</label>
+      <textarea name="description" placeholder="Short description"></textarea>
+      <div class="hint" style="color:#f29a43;margin-top:20px;margin-bottom:8px">Provide <b>at least one</b> of these three files.</div>
+      <div class="row">
+        <div>
+          <label>GLB model file (.glb) — max 5 MB</label>
+          <input type="file" name="glb" accept=".glb,model/gltf-binary">
+          <div class="file-note" id="glb-size-note"></div>
+        </div>
+        <div>
+          <label>Technical drawing (PDF or image) — max 2 MB</label>
+          <input type="file" name="drawing" accept=".pdf,image/*">
+          <div class="file-note" id="drawing-size-note"></div>
+        </div>
+      </div>
+      <label>Thumbnail / cover image (auto-compressed)</label>
+      <input type="file" name="thumbnail" accept="image/*">
+      <button type="submit" id="project-submit">Publish project</button>
+      <div class="progress" id="project-progress" hidden><div></div></div>
+      <div class="status" id="project-status"></div>
+    </form>
   </section>
 
   <section>
     <h2>💼 Experience</h2>
     <div id="experience-list"></div>
-
     <h3>Add experience</h3>
     <form id="experience-form">
       <div class="row-3">
-        <div><label>Company *</label><input name="company" required placeholder="ISHIP LOGIPACK INCORPORATED"></div>
-        <div><label>Role</label><input name="role" placeholder="CAD Designer & Model Expert"></div>
-        <div><label>Years (number)</label><input name="years" type="number" min="0" placeholder="16"></div>
+        <div><label>Company *</label><input name="company" required></div>
+        <div><label>Role</label><input name="role"></div>
+        <div><label>Years</label><input name="years" type="number" min="0"></div>
       </div>
       <div class="row-3">
-        <div><label>Years suffix</label><input name="yearsSuffix" placeholder="+" maxlength="3"></div>
-        <div><label>Years label</label><input name="yearsLabel" placeholder="CAD & FURNITURE DESIGN"></div>
-        <div>
-          <label>Current position?</label>
-          <select name="current"><option value="no">No</option><option value="yes">Yes</option></select>
-        </div>
+        <div><label>Years suffix</label><input name="yearsSuffix" maxlength="3"></div>
+        <div><label>Years label</label><input name="yearsLabel"></div>
+        <div><label>Current position?</label><select name="current"><option value="no">No</option><option value="yes">Yes</option></select></div>
       </div>
       <label>Description</label>
-      <textarea name="description" placeholder="What was done in this role"></textarea>
+      <textarea name="description"></textarea>
       <button type="submit">Add experience</button>
       <div class="status" id="experience-status"></div>
     </form>
@@ -205,21 +182,19 @@
   <section>
     <h2>🏅 Certifications</h2>
     <div id="certs-list"></div>
-
     <h3>Add certification</h3>
     <form id="cert-form">
       <div class="row">
-        <div><label>Title *</label><input name="title" required placeholder="AutoCAD Professional"></div>
-        <div><label>Issuer</label><input name="issuer" placeholder="Autodesk"></div>
+        <div><label>Title *</label><input name="title" required></div>
+        <div><label>Issuer</label><input name="issuer"></div>
       </div>
-      <label>Image file * (auto-compressed to ~80 KB)</label>
+      <label>Image file *</label>
       <input type="file" name="image" accept="image/*" required>
       <button type="submit">Upload certification</button>
       <div class="progress" id="cert-progress" hidden><div></div></div>
       <div class="status" id="cert-status"></div>
     </form>
   </section>
-
 </div>
 
 <script type="module" src="admin.js"></script>
