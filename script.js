@@ -1,4 +1,4 @@
-// script.js — Fully fixed camera framing and split database loading
+// script.js — Fixed Camera, Split Database, Restored Hero
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -10,13 +10,38 @@ const $ = (s, root = document) => root.querySelector(s);
 const escapeHtml=(str='')=>String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ============================================================
-   THREE.JS SETUP
+   THREE.JS HELPERS
    ============================================================ */
+const MAT = {
+  walnut:new THREE.MeshStandardMaterial({color:0x70452f,roughness:.42}),
+  oak:new THREE.MeshStandardMaterial({color:0xb98a58,roughness:.48}),
+  stone:new THREE.MeshStandardMaterial({color:0x8f9998,roughness:.28}),
+  charcoal:new THREE.MeshStandardMaterial({color:0x273238,metalness:.25,roughness:.35})
+};
+
 function buildLighting(scene){
   scene.add(new THREE.HemisphereLight(0xe2f0ef,0x202a2d,2.1));
   const key=new THREE.DirectionalLight(0xffd4a7,3.0); key.position.set(4,8,6); key.castShadow=true; scene.add(key);
   const fill=new THREE.DirectionalLight(0x9bbdc8,2.0); fill.position.set(-5,4,-4); scene.add(fill);
   const rim=new THREE.DirectionalLight(0xf29a43,1.1); rim.position.set(0,3,7); scene.add(rim);
+}
+
+// Restored fallback model for the Hero Section
+function makeFallbackKitchen(){
+  const root=new THREE.Group();
+  const g=(w,h,d,m,x=0,y=0,z=0)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;return o;};
+  root.add(g(3.38,.105,1.72,MAT.stone,0,1.00,0));
+  root.add(g(2.92,.14,1.30,MAT.charcoal,0,.18,0));
+  root.add(g(.075,.68,1.40,MAT.walnut,-1.48,.56,0));
+  root.add(g(.075,.68,1.40,MAT.walnut,1.48,.56,0));
+  root.add(g(2.88,.68,.055,MAT.walnut,0,.56,-.68));
+  root.add(g(2.88,.075,.10,MAT.walnut,0,.88,.68));
+  root.add(g(1.36,.17,.045,MAT.walnut,-.55,.76,.665));
+  root.add(g(1.36,.17,.045,MAT.walnut,-.55,.555,.665));
+  root.add(g(1.36,.17,.045,MAT.walnut,-.55,.35,.665));
+  root.add(g(.345,.59,.055,MAT.oak,.83,.55,.725));
+  root.add(g(.345,.59,.055,MAT.oak,1.19,.55,.725));
+  return root;
 }
 
 function createScene(canvas){
@@ -30,7 +55,6 @@ function createScene(canvas){
   buildLighting(scene);
   const camera=new THREE.PerspectiveCamera(40, Math.max(canvas.clientWidth,1)/Math.max(canvas.clientHeight,1), 0.01, 10000);
 
-  // The grid will be resized dynamically later
   const grid=new THREE.GridHelper(10, 20, 0x63818a, 0x3c5159);
   grid.material.transparent=true; grid.material.opacity=.3; scene.add(grid);
 
@@ -42,40 +66,24 @@ function createScene(canvas){
   let bounds=new THREE.Box3(), center=new THREE.Vector3(), size=new THREE.Vector3(), maxDim=10;
   let raf=0;
 
-  // THIS IS THE CORE FIX FOR THE CAMERA
   function fitCameraToObject(){
     if(!object) return;
-
-    // 1. Force Three.js to calculate world matrices so bounds are accurate
     object.updateMatrixWorld(true);
-
-    // 2. Get the bounding box of the model
-    bounds.setFromObject(object);
-    bounds.getCenter(center);
-    bounds.getSize(size);
-
-    // 3. Find the largest dimension
+    bounds.setFromObject(object); bounds.getCenter(center); bounds.getSize(size);
+    
     maxDim = Math.max(size.x, size.y, size.z);
     if (maxDim === 0) maxDim = 10;
 
-    // 4. Resize the grid to match the model, placing it exactly at the bottom of the model
     grid.position.y = bounds.min.y;
     grid.scale.set(maxDim * 2, 1, maxDim * 2);
 
-    // 5. Calculate camera distance based on FOV and model size
     const fitHeightDistance = maxDim / (2 * Math.tan(Math.PI * camera.fov / 360));
     const fitWidthDistance = fitHeightDistance / camera.aspect;
-    const distance = 1.5 * Math.max(fitHeightDistance, fitWidthDistance); // 1.5x padding
+    const distance = 1.5 * Math.max(fitHeightDistance, fitWidthDistance);
 
-    // 6. Aim camera at center from an Isometric angle
     controls.target.copy(center);
-    camera.position.set(
-      center.x + distance * 0.707,
-      center.y + distance * 0.707,
-      center.z + distance * 0.707
-    );
-
-    // 7. Update near/far planes so it doesn't clip
+    camera.position.set(center.x + distance * 0.707, center.y + distance * 0.707, center.z + distance * 0.707);
+    
     camera.near = distance / 100;
     camera.far = distance * 100;
     camera.updateProjectionMatrix();
@@ -92,21 +100,12 @@ function createScene(canvas){
 
   function setView(view){
     if(!object)return;
-    // Distance is based on the largest dimension
     const d = maxDim * 1.8; 
-    
-    if (view === 'iso') {
-      camera.position.set(center.x + d, center.y + d, center.z + d);
-    } else if (view === 'front') {
-      camera.position.set(center.x, center.y, center.z + d);
-    } else if (view === 'side') {
-      camera.position.set(center.x + d, center.y, center.z);
-    } else if (view === 'top') {
-      camera.position.set(center.x, center.y + d, center.z + 0.01);
-    }
-    
-    controls.target.copy(center);
-    controls.update();
+    if (view === 'iso') camera.position.set(center.x + d, center.y + d, center.z + d);
+    else if (view === 'front') camera.position.set(center.x, center.y, center.z + d);
+    else if (view === 'side') camera.position.set(center.x + d, center.y, center.z);
+    else if (view === 'top') camera.position.set(center.x, center.y + d, center.z + 0.01);
+    controls.target.copy(center); controls.update();
   }
 
   function setWire(v){
@@ -121,9 +120,7 @@ function createScene(canvas){
 
   function setObject(next){
     if(object){scene.remove(object);object=null;}
-    object=next;
-    scene.add(object);
-    fitCameraToObject(); // Trigger fit on load
+    object=next; scene.add(object); fitCameraToObject(); 
   }
 
   function animate(){raf=requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}
@@ -134,9 +131,7 @@ function createScene(canvas){
 
 function base64ToArrayBuffer(dataUrl){
   const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-  const binary = atob(base64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
+  const binary = atob(base64); const len = binary.length; const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
 }
@@ -145,10 +140,22 @@ function base64ToBlobUrl(dataUrl, mime){ if(!dataUrl) return ''; if(dataUrl.star
 /* ============================================================
    HERO 3D & AUTH
    ============================================================ */
+(function initHero(){
+  const canvas=$('#hero-model');
+  if(!canvas)return;
+  try{
+    const hero=createScene(canvas);
+    hero.setObject(makeFallbackKitchen());
+  }catch(e){
+    console.error('Hero 3D error',e);
+    canvas.parentElement?.classList.add('webgl-unavailable');
+  }
+})();
+
 onAuthStateChanged(auth,user=>{ document.body.classList.toggle('is-admin',!!user); });
 
 /* ============================================================
-   PROJECTS
+   PROJECTS (Split Meta & Data for Instant Load)
    ============================================================ */
 const projectGrid=$('#project-grid');
 const detailOverlay=$('#project-detail');
@@ -189,7 +196,6 @@ async function openProject(id, metaData){
   $('#detail-title').textContent=metaData.title||'Untitled';
   $('#detail-desc').textContent=metaData.description||'Loading files...';
 
-  // Reset UI
   $('.detail-drawing').style.display = 'none';
   $('.detail-model-wrap').style.display = 'none';
   $('.detail-body').style.gridTemplateColumns = '1fr';
