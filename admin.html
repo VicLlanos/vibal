@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Rodel Vibal Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+    "firebase/database": "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"
+  }
+}
+</script>
+<style>
+  :root{--bg:#111820;--panel:#17222a;--line:#3c4b52;--ink:#edf0ed;--muted:#8bb5c2;--orange:#f29a43;--orange2:#ffc078;--mono:"DM Mono",monospace;--display:"Barlow Condensed",sans-serif;--body:"Manrope",sans-serif}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.6;padding:40px 6% 80px;max-width:1100px;margin:0 auto}
+  h1{font:800 48px var(--display);margin:0 0 6px;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--orange)}
+  h2{font:700 26px var(--display);margin:48px 0 12px;border-bottom:1px solid var(--line);padding-bottom:10px}
+  h3{font:600 20px var(--display);margin:26px 0 8px;color:var(--orange2)}
+  label{display:block;font:9px var(--mono);letter-spacing:.1em;color:var(--muted);margin:16px 0 5px;text-transform:uppercase}
+  input,textarea,select{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:10px 12px;font:13px var(--body);font-family:inherit;border-radius:0}
+  input:focus,textarea:focus{outline:none;border-color:var(--orange)}
+  textarea{min-height:80px;resize:vertical}
+  button{background:var(--orange);color:#14191d;border:0;padding:11px 20px;font:700 12px var(--body);cursor:pointer;margin-top:18px}
+  button:hover{background:var(--orange2)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:transparent;color:#9eafb3;border:1px solid var(--line)}
+  button.danger{background:#c0392b;color:#fff;padding:7px 12px;font-size:11px;margin:0}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .list-item{background:var(--panel);border:1px solid #35444b;padding:14px 16px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .list-item .info{flex:1;min-width:200px}
+  .list-item b{font-size:14px}
+  .list-item small{display:block;color:#819096;font-size:10px;font-family:var(--mono)}
+  .list-item .actions{display:flex;gap:8px;flex-shrink:0}
+  .auth-gate{padding:40px;border:1px solid #34434a;background:var(--panel);max-width:440px;margin:60px auto;text-align:center}
+  .status{font:11px var(--mono);color:var(--orange2);margin-top:12px;min-height:16px}
+  .status.error{color:#f07070}
+  .status.ok{color:#7fd17f}
+  .thumb{width:64px;height:64px;object-fit:cover;background:#0e151b;flex-shrink:0;border:1px solid var(--line)}
+  .topbar{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:14px;flex-wrap:wrap;gap:12px}
+  .topbar a{color:var(--orange);font-size:11px;font-family:var(--mono);letter-spacing:.1em;text-decoration:none}
+  .hint{font:10px var(--mono);color:#6b7d83;margin-top:6px}
+  .file-note{font:10px var(--mono);color:var(--orange);margin-top:6px}
+  .progress{height:4px;background:#2a3941;margin-top:10px;overflow:hidden}
+  .progress>div{height:100%;background:var(--orange);width:0;transition:width .2s}
+  .empty{color:#6b7d83;font:10px var(--mono);padding:16px 0}
+
+  /* Usage meter */
+  .usage-box{border:1px solid var(--line);background:var(--panel);padding:16px 18px;margin-top:20px}
+  .usage-box .head{display:flex;justify-content:space-between;font:10px var(--mono);letter-spacing:.1em;color:var(--muted);margin-bottom:8px}
+  .usage-bar{height:10px;background:#0e151b;border:1px solid var(--line);overflow:hidden;position:relative}
+  .usage-bar>div{height:100%;background:linear-gradient(90deg,#4caf50,#f29a43);width:0;transition:width .3s}
+  .usage-bar.warn>div{background:linear-gradient(90deg,#f29a43,#e74c3c)}
+  .usage-detail{font:10px var(--mono);color:#819096;margin-top:8px;display:flex;justify-content:space-between}
+
+  @media(max-width:760px){.row,.row-3{grid-template-columns:1fr}body{padding:24px 5% 60px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Portfolio <em>Admin</em></h1>
+  <a href="index.html">← Back to site</a>
+</div>
+
+<div id="auth-gate" class="auth-gate">
+  <h3 style="margin-top:0">Sign in</h3>
+  <label>Email</label>
+  <input type="email" id="login-email" autocomplete="username" placeholder="you@example.com">
+  <label>Password</label>
+  <input type="password" id="login-pass" autocomplete="current-password">
+  <button id="login-btn">Sign in</button>
+  <div class="status" id="login-status"></div>
+  <p class="hint">Only accounts allowed by RTDB rules can write data.</p>
+</div>
+
+<div id="admin-panel" hidden>
+
+  <!-- Usage meter -->
+  <div class="usage-box">
+    <div class="head">
+      <span>RTDB USAGE</span>
+      <span id="usage-pct">— %</span>
+    </div>
+    <div class="usage-bar" id="usage-bar"><div id="usage-fill"></div></div>
+    <div class="usage-detail">
+      <span id="usage-bytes">— / 1 GB</span>
+      <span id="usage-projects">— projects</span>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <section>
+    <h2>📦 Projects (GLB + Technical Drawing)</h2>
+    <p class="hint" style="color:#f29a43">
+      ⚠️ Files are stored as Base64 inside Realtime Database.
+      Limits: GLB ≤ 5 MB · Drawing ≤ 2 MB. Images are auto-compressed.
+    </p>
+    <div id="projects-list"></div>
+
+    <h3>Add new project</h3>
+    <form id="project-form">
+      <div class="row">
+        <div><label>Title *</label><input name="title" required placeholder="Kitchen island"></div>
+        <div><label>Focus / tag</label><input name="focus" placeholder="Casework / Worktop"></div>
+      </div>
+      <label>Description</label>
+      <textarea name="description" placeholder="Short description shown in the detail view"></textarea>
+      <div class="row">
+        <div>
+          <label>GLB model file (.glb) * (max 5 MB)</label>
+          <input type="file" name="glb" accept=".glb,model/gltf-binary" required>
+          <div class="file-note" id="glb-size-note"></div>
+        </div>
+        <div>
+          <label>Technical drawing (PDF or image) * (max 2 MB)</label>
+          <input type="file" name="drawing" accept=".pdf,image/*" required>
+          <div class="file-note" id="drawing-size-note"></div>
+        </div>
+      </div>
+      <label>Optional thumbnail (image — auto-compressed to ~80 KB)</label>
+      <input type="file" name="thumbnail" accept="image/*">
+      <button type="submit" id="project-submit">Publish project</button>
+      <div class="progress" id="project-progress" hidden><div></div></div>
+      <div class="status" id="project-status"></div>
+    </form>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section>
+    <h2>💼 Experience</h2>
+    <div id="experience-list"></div>
+
+    <h3>Add experience</h3>
+    <form id="experience-form">
+      <div class="row-3">
+        <div><label>Company *</label><input name="company" required placeholder="ISHIP LOGIPACK INCORPORATED"></div>
+        <div><label>Role</label><input name="role" placeholder="CAD Designer & Model Expert"></div>
+        <div><label>Years (number)</label><input name="years" type="number" min="0" placeholder="16"></div>
+      </div>
+      <div class="row-3">
+        <div><label>Years suffix</label><input name="yearsSuffix" placeholder="+" maxlength="3"></div>
+        <div><label>Years label</label><input name="yearsLabel" placeholder="CAD & FURNITURE DESIGN"></div>
+        <div>
+          <label>Current position?</label>
+          <select name="current"><option value="no">No</option><option value="yes">Yes</option></select>
+        </div>
+      </div>
+      <label>Description</label>
+      <textarea name="description" placeholder="What was done in this role"></textarea>
+      <button type="submit">Add experience</button>
+      <div class="status" id="experience-status"></div>
+    </form>
+  </section>
+
+  <!-- CERTIFICATIONS -->
+  <section>
+    <h2>🏅 Certifications</h2>
+    <div id="certs-list"></div>
+
+    <h3>Add certification</h3>
+    <form id="cert-form">
+      <div class="row">
+        <div><label>Title *</label><input name="title" required placeholder="AutoCAD Professional"></div>
+        <div><label>Issuer</label><input name="issuer" placeholder="Autodesk"></div>
+      </div>
+      <label>Image file * (auto-compressed to ~80 KB)</label>
+      <input type="file" name="image" accept="image/*" required>
+      <button type="submit">Upload certification</button>
+      <div class="progress" id="cert-progress" hidden><div></div></div>
+      <div class="status" id="cert-status"></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Session</h2>
+    <button class="ghost" id="logout-btn">Sign out</button>
+  </section>
+
+</div>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>

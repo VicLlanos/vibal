@@ -12,7 +12,17 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script type="importmap">
-    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+      "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+      "firebase/database": "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js",
+      "firebase/storage": "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js",
+      "firebase/analytics": "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js"
+    }
+  }
   </script>
 </head>
 <body>
@@ -21,9 +31,10 @@
     <a class="brand" href="#home" aria-label="Rodel Vibal home"><span class="brand-mark">RV<span>.</span></span><span class="brand-copy"><b>RODEL VIBAL</b><small>CAD DESIGNER / MODEL EXPERT</small></span></a>
     <button class="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
     <nav class="main-nav">
-      <a class="active" href="#home">Overview</a><a href="#profile">Profile</a><a href="#expertise">Expertise</a><a href="#work">Selected work</a><a href="#process">Method</a><a href="#contact">Contact</a>
+      <a class="active" href="#home">Overview</a><a href="#profile">Profile</a><a href="#expertise">Expertise</a><a href="#work">Selected work</a><a href="#process">Method</a><a href="#certifications">Certifications</a><a href="#contact">Contact</a>
     </nav>
     <a class="header-cta" href="#contact">Discuss a project <span>↗</span></a>
+    <a class="header-cta admin-link" href="admin.html" id="admin-link">Admin <span>⚙</span></a>
   </header>
 
   <main>
@@ -50,7 +61,7 @@
       <div class="section-kicker">01 / PROFESSIONAL PROFILE</div>
       <div class="profile-layout">
         <div><h2>Experience is<br><em>built into</em> the details.</h2></div>
-        <div class="profile-text"><p class="lead">A seasoned CAD Designer and Model Expert with 16 years of professional experience, currently working at <strong>ISHIP LOGIPACK INCORPORATED.</strong></p><p>Focused on interior furniture and cabinetry design, 3D modeling, template development, and technical detailing. The work balances visual quality with practical considerations: fit, assembly, material intent, repeatability, and manufacturability.</p><p>This portfolio presents representative furniture and interior millwork studies and the design thinking behind them. Project visuals are concept demonstrations and should be replaced with Rodel's approved production work before public use.</p></div>
+        <div class="profile-text"><p class="lead">A seasoned CAD Designer and Model Expert with 16 years of professional experience, currently working at <strong>ISHIP LOGIPACK INCORPORATED.</strong></p><p>Focused on interior furniture and cabinetry design, 3D modeling, template development, and technical detailing. The work balances visual quality with practical considerations: fit, assembly, material intent, repeatability, and manufacturability.</p><p>This portfolio presents representative furniture and interior millwork studies and the design thinking behind them.</p></div>
       </div>
       <div class="profile-strip"><div><span>01</span><b>Product understanding</b><small>Function, user interaction & form</small></div><div><span>02</span><b>Engineering discipline</b><small>Dimensions, fit & assembly logic</small></div><div><span>03</span><b>Production awareness</b><small>Templates, detailing & hand-off</small></div></div>
     </section>
@@ -65,27 +76,55 @@
         <article class="capability"><span class="cap-no">CAPABILITY / 05</span><div class="cap-icon">◫</div><h3>Assembly & Fit</h3><p>Component interfaces, fastening strategy, clearances, exploded relationships, and assembly communication.</p><div class="tags"><span>FIT CHECKS</span><span>EXPLODED VIEWS</span><span>FASTENERS</span></div></article>
         <article class="capability"><span class="cap-no">CAPABILITY / 06</span><div class="cap-icon">◉</div><h3>Visualization</h3><p>Presentation-ready model views, material studies, and visual explanations that make design intent easy to review.</p><div class="tags"><span>RENDERING</span><span>VIEW SETUP</span><span>PRESENTATION</span></div></article>
       </div>
-      <div class="software-note"><span>TOOLS & WORKFLOWS</span><p>CAD software, drafting standards, and rendering tools can be listed here once Rodel confirms the exact applications and versions he uses.</p></div>
+      <div class="software-note"><span>TOOLS & WORKFLOWS</span><p>CAD software, drafting standards, and rendering tools used across projects.</p></div>
     </section>
 
     <section class="work-section section-pad" id="work">
-      <div class="section-heading work-heading"><div><div class="section-kicker">03 / SELECTED FURNITURE & INTERIOR MILLWORK</div><h2>Objects, understood<br><em>from the inside out.</em></h2></div><p>Explore a set of furniture and millwork studies, including a complete room-scale kitchen layout. Select a model to inspect its 3D form, construction logic, and technical focus. Switch orthographic views, inspect wireframe edges, explode assemblies, and reveal dimension callouts.</p></div>
-      <div class="work-layout">
-        <div class="project-list" role="tablist" aria-label="Furniture and interior model studies">
-          <button class="project-tab active" data-model="kitchen" role="tab" aria-selected="true"><span>01</span><span><b>Kitchen island</b><small>Worktop · carcass · drawers</small></span><i>↗</i></button>
-          <button class="project-tab" data-model="fullkitchen" role="tab" aria-selected="false"><span>02</span><span><b>Full kitchen</b><small>Cabinetry · appliances · island</small></span><i>↗</i></button>
-          <button class="project-tab" data-model="dining" role="tab" aria-selected="false"><span>03</span><span><b>Dining table & chairs</b><small>Tabletop · apron · joinery</small></span><i>↗</i></button>
-          <button class="project-tab" data-model="drawer" role="tab" aria-selected="false"><span>04</span><span><b>Drawer cabinet</b><small>Carcass · fronts · runners</small></span><i>↗</i></button>
-          <button class="project-tab" data-model="wardrobe" role="tab" aria-selected="false"><span>05</span><span><b>Built-in wardrobe</b><small>Doors · shelves · hanging rail</small></span><i>↗</i></button>
+      <div class="section-heading work-heading">
+        <div>
+          <div class="section-kicker">03 / SELECTED FURNITURE & INTERIOR MILLWORK</div>
+          <h2>Objects, understood<br><em>from the inside out.</em></h2>
         </div>
-        <div class="project-viewer">
-          <div class="viewer-top"><span id="viewer-code">MODEL STUDY / RV-001</span><span>3D MODEL <i class="live-dot"></i></span></div>
-          <div class="model-toolbar"><button data-view="iso" class="tool-btn active">ISOMETRIC</button><button data-view="front" class="tool-btn">FRONT</button><button data-view="side" class="tool-btn">SIDE</button><button data-view="top" class="tool-btn">TOP</button><span class="toolbar-divider"></span><button id="wire-toggle" class="tool-btn">WIRE / SOLID</button><button id="explode-toggle" class="tool-btn">EXPLODED</button><button id="dims-toggle" class="tool-btn">DIMENSIONS</button></div>
-          <div class="viewer-canvas-wrap"><canvas id="project-model" aria-label="Selected furniture and cabinetry 3D model"></canvas><div class="viewer-axis">X <b>Y</b> Z</div><div class="viewer-hint">DRAG TO ROTATE · SCROLL TO ZOOM</div></div>
-          <div class="viewer-bottom"><div><h3 id="project-title">Kitchen island & countertop assembly</h3><p id="project-desc">A modular kitchen island study featuring a stone-look worktop, panelled carcass, integrated drawers, open shelving, and adjustable plinth.</p></div><div class="viewer-spec"><span>DESIGN FOCUS</span><b id="project-focus">Casework / Worktop</b><span>MODEL VIEW</span><b>Isometric · Interactive</b><span>CONCEPT ENVELOPE</span><b id="project-size">Concept envelope · 3400 × 1740 × 1150 mm</b></div></div>
+        <p>Each project pairs an interactive 3D model with its technical drawing. Click a card to inspect the model, switch orthographic views, toggle wireframe, and open the drawing.</p>
+      </div>
+
+      <div id="project-grid" class="project-grid" aria-live="polite">
+        <div class="loading-state">Loading projects…</div>
+      </div>
+
+      <div id="project-detail" class="project-detail" hidden>
+        <div class="detail-header">
+          <button id="detail-close" class="detail-close" aria-label="Close project">×</button>
+          <div>
+            <span id="detail-code" class="detail-code"></span>
+            <h3 id="detail-title"></h3>
+            <p id="detail-desc"></p>
+          </div>
+        </div>
+        <div class="detail-body">
+          <div class="detail-model-wrap">
+            <div class="model-toolbar">
+              <button data-view="iso" class="tool-btn active">ISOMETRIC</button>
+              <button data-view="front" class="tool-btn">FRONT</button>
+              <button data-view="side" class="tool-btn">SIDE</button>
+              <button data-view="top" class="tool-btn">TOP</button>
+              <span class="toolbar-divider"></span>
+              <button id="wire-toggle" class="tool-btn">WIRE / SOLID</button>
+            </div>
+            <div class="detail-canvas-wrap">
+              <canvas id="detail-model" aria-label="3D model viewer"></canvas>
+              <div class="viewer-axis">X <b>Y</b> Z</div>
+            </div>
+          </div>
+          <div class="detail-drawing">
+            <div class="drawing-label">TECHNICAL DRAWING</div>
+            <div class="drawing-preview" id="drawing-preview">
+              <div class="pdf-note">Loading drawing…</div>
+            </div>
+            <a href="#" target="_blank" rel="noopener" id="drawing-open" class="btn-primary-custom">Open full drawing <b>↗</b></a>
+          </div>
         </div>
       </div>
-      <div class="project-disclaimer">MODEL CONTROLS / Use orthographic presets, wireframe overlay, exploded assembly, and dimension annotations to inspect the model.</div><div class="project-disclaimer">PORTFOLIO NOTE / These are original procedural 3D furniture concept studies created for this website, not verified CAD exports or confirmed ISHIP LOGIPACK projects. Replace them with Rodel's own approved work samples, drawings, and specifications.</div>
     </section>
 
     <section class="method-section section-pad" id="process">
@@ -93,13 +132,26 @@
       <div class="method-steps"><article><span>01</span><h3>Understand</h3><p>Review the brief, reference dimensions, function, constraints, and intended use.</p></article><article><span>02</span><h3>Build</h3><p>Develop the primary geometry, component breakdown, and initial assembly structure.</p></article><article><span>03</span><h3>Validate</h3><p>Check clearances, interfaces, proportions, and drawing consistency; refine as needed.</p></article><article><span>04</span><h3>Communicate</h3><p>Prepare clean views, detailed drawings, templates, and organized hand-off material.</p></article></div>
     </section>
 
-    <section class="experience-section section-pad">
-      <div class="section-kicker">05 / PROFESSIONAL EXPERIENCE</div><div class="experience-card"><div class="experience-years">16<span>+</span><small>YEARS IN CAD<br>& FURNITURE DESIGN</small></div><div class="experience-details"><div class="current-label"><i></i> CURRENT POSITION</div><h2>ISHIP LOGIPACK<br><em>INCORPORATED</em></h2><p class="role-line">CAD DESIGNER & MODEL EXPERT</p><p>Bringing long-term hands-on experience in CAD design, 3D modeling, furniture and cabinetry development, and template engineering to a collaborative production environment.</p><div class="experience-tags"><span>PRODUCT DESIGN</span><span>3D MODELING</span><span>TECHNICAL DETAILING</span><span>TEMPLATE DEVELOPMENT</span></div></div><div class="experience-stamp">EXPERIENCE<br><b>16 YEARS</b><br>CRAFTED THROUGH<br>PRECISION</div></div>
-      <p class="experience-footnote">Employment dates, earlier roles, certifications, and project outcomes can be added here when Rodel provides the verified details.</p>
+    <section class="experience-section section-pad" id="experience">
+      <div class="section-kicker">05 / PROFESSIONAL EXPERIENCE</div>
+      <div id="experience-list" class="experience-list">
+        <div class="loading-state" style="color:#7e8c91;font:11px 'DM Mono';letter-spacing:.1em;padding:40px 0">Loading experience…</div>
+      </div>
+    </section>
+
+    <section class="certifications-section section-pad" id="certifications">
+      <div class="section-kicker">06 / CERTIFICATIONS</div>
+      <div class="section-heading">
+        <div><h2>Verified <em>credentials.</em></h2></div>
+        <p>Professional certifications and training records.</p>
+      </div>
+      <div id="cert-grid" class="cert-grid">
+        <div class="loading-state">Loading certifications…</div>
+      </div>
     </section>
 
     <section class="contact-section section-pad" id="contact">
-      <div class="contact-grid"></div><div class="section-kicker">06 / LET'S CONNECT</div><div class="contact-content"><div><h2>Have a product<br>to <em>bring to form?</em></h2><p>For CAD design, 3D modeling, technical drawing, or product-development discussions, get in touch.</p></div><div class="contact-panel"><span>CONTACT DETAILS</span><h3>Rodel Vibal</h3><p>CAD Designer & Model Expert<br>ISHIP LOGIPACK INCORPORATED</p><a href="mailto:ADD-RODEL-EMAIL@example.com" class="contact-link">ADD EMAIL ADDRESS <b>↗</b></a><small>Replace this placeholder with Rodel's preferred professional email or contact link.</small></div></div>
+      <div class="contact-grid"></div><div class="section-kicker">07 / LET'S CONNECT</div><div class="contact-content"><div><h2>Have a product<br>to <em>bring to form?</em></h2><p>For CAD design, 3D modeling, technical drawing, or product-development discussions, get in touch.</p></div><div class="contact-panel"><span>CONTACT DETAILS</span><h3>Rodel Vibal</h3><p>CAD Designer & Model Expert<br>ISHIP LOGIPACK INCORPORATED</p><a href="mailto:ADD-RODEL-EMAIL@example.com" class="contact-link">ADD EMAIL ADDRESS <b>↗</b></a><small>Replace this placeholder with Rodel's preferred professional email or contact link.</small></div></div>
       <div class="contact-bottom"><span>RODEL VIBAL / CAD DESIGNER & MODEL EXPERT</span><span>PRECISION IS A PRACTICE. NOT AN ACCIDENT.</span></div>
     </section>
   </main>
