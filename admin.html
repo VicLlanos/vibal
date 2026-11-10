@@ -75,7 +75,7 @@
   <a href="index.html">← Back to site</a>
 </div>
 
-<!-- ============= AUTH GATE ============= -->
+<!-- AUTH GATE -->
 <div id="auth-gate" class="auth-gate">
 
   <div class="auth-tabs">
@@ -83,7 +83,6 @@
     <button class="auth-tab" data-tab="register">Create account</button>
   </div>
 
-  <!-- LOGIN -->
   <div class="auth-pane active" id="pane-login">
     <h3 style="margin-top:0">Welcome back</h3>
     <label>Email</label>
@@ -94,11 +93,10 @@
     <div class="status" id="login-status"></div>
   </div>
 
-  <!-- REGISTER -->
   <div class="auth-pane" id="pane-register">
     <h3 style="margin-top:0">Create your account</h3>
     <p class="hint" style="margin-top:0;margin-bottom:10px">
-      Use the email address that's whitelisted in the database rules. Only that email can upload content.
+      Use the email address that is whitelisted in the database rules. Only that email can upload content.
     </p>
     <label>Full name</label>
     <input type="text" id="reg-name" autocomplete="name" placeholder="Rodel Vibal">
@@ -114,7 +112,7 @@
 
 </div>
 
-<!-- ============= ADMIN PANEL ============= -->
+<!-- ADMIN PANEL -->
 <div id="admin-panel" hidden>
 
   <div class="logged-banner">
@@ -122,7 +120,6 @@
     <button class="ghost" id="logout-btn" style="margin:0;padding:6px 12px;font-size:11px">Sign out</button>
   </div>
 
-  <!-- Usage meter -->
   <div class="usage-box">
     <div class="head">
       <span>RTDB USAGE</span>
@@ -135,7 +132,6 @@
     </div>
   </div>
 
-  <!-- PROJECTS -->
   <section>
     <h2>📦 Projects (GLB + Technical Drawing)</h2>
     <p class="hint" style="color:#f29a43">
@@ -172,7 +168,6 @@
     </form>
   </section>
 
-  <!-- EXPERIENCE -->
   <section>
     <h2>💼 Experience</h2>
     <div id="experience-list"></div>
@@ -199,7 +194,6 @@
     </form>
   </section>
 
-  <!-- CERTIFICATIONS -->
   <section>
     <h2>🏅 Certifications</h2>
     <div id="certs-list"></div>

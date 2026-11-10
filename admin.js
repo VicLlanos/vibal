@@ -1,4 +1,4 @@
-// admin.js — Realtime Database + Base64 + self-registration
+// admin.js — Realtime Database + Base64 + self-registration (no Storage)
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -18,9 +18,7 @@ import { auth, db } from "./firebase-config.js";
 const $ = (s,root=document)=>root.querySelector(s);
 const escapeHtml=(str='')=>String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* ============================================================
-   LIMITS
-   ============================================================ */
+/* ============ LIMITS ============ */
 const LIMITS = {
   GLB_MAX_BYTES: 5 * 1024 * 1024,
   DRAWING_MAX_BYTES: 2 * 1024 * 1024,
@@ -28,9 +26,7 @@ const LIMITS = {
   WARN_AT: 0.70
 };
 
-/* ============================================================
-   AUTH TABS
-   ============================================================ */
+/* ============ AUTH TABS ============ */
 document.querySelectorAll('.auth-tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.auth-tab').forEach(t=>t.classList.toggle('active',t===tab));
@@ -40,9 +36,7 @@ document.querySelectorAll('.auth-tab').forEach(tab=>{
   });
 });
 
-/* ============================================================
-   AUTH STATE
-   ============================================================ */
+/* ============ AUTH STATE ============ */
 const gate=$('#auth-gate');
 const panel=$('#admin-panel');
 
@@ -58,9 +52,7 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-/* ============================================================
-   LOGIN
-   ============================================================ */
+/* ============ LOGIN ============ */
 const loginBtn=$('#login-btn');
 const loginStatus=$('#login-status');
 
@@ -84,9 +76,7 @@ loginBtn.addEventListener('click',async()=>{
   }
 });
 
-/* ============================================================
-   REGISTRATION
-   ============================================================ */
+/* ============ REGISTER ============ */
 const registerBtn=$('#register-btn');
 const registerStatus=$('#register-status');
 
@@ -140,14 +130,10 @@ function humanizeAuthError(e){
   return map[code] || (e?.message || 'Something went wrong.');
 }
 
-/* ============================================================
-   LOGOUT
-   ============================================================ */
+/* ============ LOGOUT ============ */
 $('#logout-btn')?.addEventListener('click',async()=>{ await signOut(auth); });
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
+/* ============ HELPERS ============ */
 function setStatus(id,msg,type=''){
   const el=$('#'+id);
   if(!el) return;
@@ -177,9 +163,7 @@ function formatBytes(b){
   return (b/1024/1024/1024).toFixed(2)+' GB';
 }
 
-/* ============================================================
-   FILE HELPERS
-   ============================================================ */
+/* ============ FILE HELPERS ============ */
 function readFileAsDataURL(file){
   return new Promise((resolve,reject)=>{
     const r=new FileReader();
@@ -214,9 +198,7 @@ async function compressImage(file, maxDim=1200, quality=0.75){
   });
 }
 
-/* ============================================================
-   USAGE METER
-   ============================================================ */
+/* ============ USAGE METER ============ */
 function updateUsageMeter(totalBytes, projectCount){
   const pct=Math.min(100,(totalBytes/LIMITS.RTDB_FREE_BYTES)*100);
   const fill=$('#usage-fill');
@@ -232,9 +214,7 @@ function updateUsageMeter(totalBytes, projectCount){
   projEl.textContent=`${projectCount} project${projectCount===1?'':'s'}`;
 }
 
-/* ============================================================
-   PROJECTS
-   ============================================================ */
+/* ============ PROJECTS LIST ============ */
 const projectListEl=$('#projects-list');
 
 onValue(
@@ -286,9 +266,7 @@ drawingInput?.addEventListener('change',()=>{
   note.textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.DRAWING_MAX_BYTES?'⚠️ TOO LARGE (max 2 MB)':'✓ OK'}`:'';
 });
 
-/* ============================================================
-   PROJECT UPLOAD
-   ============================================================ */
+/* ============ PROJECT UPLOAD ============ */
 $('#project-form').addEventListener('submit',async e=>{
   e.preventDefault();
   const form=e.target;
@@ -370,9 +348,7 @@ $('#project-form').addEventListener('submit',async e=>{
   }
 });
 
-/* ============================================================
-   EXPERIENCE
-   ============================================================ */
+/* ============ EXPERIENCE ============ */
 const expListEl=$('#experience-list');
 onValue(
   dbRef(db,'experience'),
@@ -426,9 +402,7 @@ $('#experience-form').addEventListener('submit',async e=>{
   }
 });
 
-/* ============================================================
-   CERTIFICATIONS
-   ============================================================ */
+/* ============ CERTIFICATIONS ============ */
 const certListEl=$('#certs-list');
 onValue(
   dbRef(db,'certifications'),
