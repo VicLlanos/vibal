@@ -1,4 +1,4 @@
-// admin.js — Full fixed uploader
+// admin.js — With GLB Compression
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { ref as dbRef, push, set, remove, onValue } from "firebase/database";
 import { auth, db } from "./firebase-config.js";
@@ -49,7 +49,7 @@ function progressController(wrapId){ const wrap=$('#'+wrapId); if(!wrap) return 
 function formatBytes(b){ if(b<1024)return b+' B'; if(b<1024*1024)return (b/1024).toFixed(1)+' KB'; if(b<1024*1024*1024)return (b/1024/1024).toFixed(2)+' MB'; return (b/1024/1024/1024).toFixed(2)+' GB'; }
 function snapshotToArray(snap){ const val=snap.val()||{}; return Object.entries(val).map(([id,data])=>({id,data:data||{}})).sort((a,b)=>(b.data.createdAt||0)-(a.data.createdAt||0)); }
 
-/* ============ FILE HELPERS ============ */
+/* ============ FILE & GLB HELPERS ============ */
 function readFileAsDataURL(file){ return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=()=>reject(new Error('File read failed')); r.readAsDataURL(file); }); }
 async function compressImage(file, maxDim=1200, quality=0.75){
   return new Promise((resolve,reject)=>{
@@ -58,6 +58,34 @@ async function compressImage(file, maxDim=1200, quality=0.75){
       const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d'); ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
       try{ resolve(canvas.toDataURL('image/jpeg',quality)); }catch(e){ reject(e); } };
     img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image decode failed'));}; img.src=url;
+  });
+}
+
+// NEW: Compress GLB using gltf-pipeline
+async function compressGLB(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const arrayBuffer = e.target.result;
+        // Compress using Draco (reduces size by up to 90%)
+        const results = await GltfPipeline.processGlb(arrayBuffer, {
+          dracoOptions: { compressionLevel: 7 }
+        });
+        // Convert the compressed ArrayBuffer back to a Base64 Data URL
+        const blob = new Blob([results.glb], { type: 'model/gltf-binary' });
+        const url = await new Promise(r => {
+          const fr = new FileReader();
+          fr.onload = () => r(fr.result);
+          fr.readAsDataURL(blob);
+        });
+        resolve(url);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -108,10 +136,10 @@ onValue(dbRef(db,'projects_meta'), snap=>{
 
 /* Live file size notes */
 const glbInput=$('input[name="glb"]', $('#project-form')), drawingInput=$('input[name="drawing"]', $('#project-form'));
-glbInput?.addEventListener('change',()=>{ const f=glbInput.files[0]; $('#glb-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.GLB_MAX_BYTES?'⚠️ TOO LARGE':'✓ OK'}`:''; });
+glbInput?.addEventListener('change',()=>{ const f=glbInput.files[0]; $('#glb-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.GLB_MAX_BYTES?'⚠️ TOO LARGE':'✓ OK (will compress)'}`:''; });
 drawingInput?.addEventListener('change',()=>{ const f=drawingInput.files[0]; $('#drawing-size-note').textContent=f?`${formatBytes(f.size)} — ${f.size>LIMITS.DRAWING_MAX_BYTES?'⚠️ TOO LARGE':'✓ OK'}`:''; });
 
-/* ============ PROJECT UPLOAD (Split Save) ============ */
+/* ============ PROJECT UPLOAD ============ */
 $('#project-form').addEventListener('submit',async e=>{
   e.preventDefault();
   const form=e.target, fd=new FormData(form);
@@ -124,8 +152,8 @@ $('#project-form').addEventListener('submit',async e=>{
 
   if(!title){ setStatus('project-status','Title is required.','error'); return; }
   if(!hasGlb && !hasDrawing && !hasThumb){ setStatus('project-status','Upload at least one file.','error'); return; }
-  if(hasGlb && glbFile.size>LIMITS.GLB_MAX_BYTES){ setStatus('project-status','GLB too large.','error'); return; }
-  if(hasDrawing && drawingFile.size>LIMITS.DRAWING_MAX_BYTES){ setStatus('project-status','Drawing too large.','error'); return; }
+  if(hasGlb && glbFile.size>LIMITS.GLB_MAX_BYTES){ setStatus('project-status','GLB too large (max 5MB).','error'); return; }
+  if(hasDrawing && drawingFile.size>LIMITS.DRAWING_MAX_BYTES){ setStatus('project-status','Drawing too large (max 2MB).','error'); return; }
 
   const submitBtn=$('#project-submit'); submitBtn.disabled=true;
   const prog=progressController('project-progress');
@@ -133,7 +161,14 @@ $('#project-form').addEventListener('submit',async e=>{
   try{
     let modelData='', drawingData='', drawingMime='', drawingType='', thumbnailData='';
 
-    if(hasGlb){ setStatus('project-status','Reading GLB…'); prog.update(15); modelData=await readFileAsDataURL(glbFile); prog.update(40); }
+    // Compress and read GLB
+    if(hasGlb){
+      setStatus('project-status','Compressing 3D Model (this may take a moment)...'); 
+      prog.update(15); 
+      modelData = await compressGLB(glbFile); 
+      prog.update(40); 
+    }
+
     if(hasDrawing){
       setStatus('project-status','Processing drawing…');
       const isPdf=(drawingFile.type==='application/pdf')||/\.pdf$/i.test(drawingFile.name);
@@ -141,24 +176,32 @@ $('#project-form').addEventListener('submit',async e=>{
       else{ drawingData=await compressImage(drawingFile,1600,0.82); drawingMime='image/jpeg'; drawingType='image'; }
       prog.update(hasGlb?70:50);
     }
-    if(hasThumb){ setStatus('project-status','Compressing thumb…'); thumbnailData=await compressImage(thumbFile,600,0.75); prog.update(80); }
+    if(hasThumb){ setStatus('project-status','Compressing thumbnail…'); thumbnailData=await compressImage(thumbFile,600,0.75); prog.update(80); }
 
     setStatus('project-status','Saving to database…');
     const ts=Date.now();
     const newRef=push(dbRef(db,'projects_meta')); 
     const id=newRef.key;
 
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Database timed out. Check your connection.')), 15000));
+
     // 1. Save Meta
-    await set(dbRef(db,'projects_meta/'+id), {
-      title, focus, description, code:`PROJECT / ${ts.toString(36).toUpperCase().slice(-6)}`,
-      thumbnailData, drawingType, 
-      hasModel: !!modelData, hasDrawing: !!drawingData,
-      createdAt: ts
-    });
+    await Promise.race([
+      set(dbRef(db,'projects_meta/'+id), {
+        title, focus, description, code:`PROJECT / ${ts.toString(36).toUpperCase().slice(-6)}`,
+        thumbnailData, drawingType, 
+        hasModel: !!modelData, hasDrawing: !!drawingData,
+        createdAt: ts
+      }),
+      timeout
+    ]);
 
     // 2. Save Heavy Data
     if(modelData || drawingData){
-      await set(dbRef(db,'projects_data/'+id), { modelData, drawingData, drawingMime });
+      await Promise.race([
+        set(dbRef(db,'projects_data/'+id), { modelData, drawingData, drawingMime }),
+        timeout
+      ]);
     }
 
     prog.update(100); setStatus('project-status','Project published ✓','ok');
