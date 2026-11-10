@@ -141,7 +141,7 @@ function createScene(canvas){
 }
 
 /* ============================================================
-   BASE64 → ARRAYBUFFER / BLOB HELPERS
+   BASE64 HELPERS
    ============================================================ */
 function base64ToArrayBuffer(dataUrl){
   const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
@@ -192,7 +192,7 @@ function sortByCreatedAt(arr){
 }
 
 /* ============================================================
-   PROJECTS
+   PROJECTS — flexible uploads (GLB, drawing, thumbnail — any combination)
    ============================================================ */
 const projectGrid=$('#project-grid');
 const detailOverlay=$('#project-detail');
@@ -206,10 +206,30 @@ function renderProjects(list){
     return;
   }
   projectGrid.innerHTML=list.map(({id,data:p})=>{
-    const thumb = p.thumbnailData
-      ? `<img src="${p.thumbnailData}" alt="${escapeHtml(p.title||'Project')} thumbnail">`
-      : `<div class="placeholder">3D MODEL<br>${escapeHtml(p.title||'Untitled')}</div>`;
-    const badge=p.drawingType?`<span class="badge">${escapeHtml(p.drawingType.toUpperCase())}</span>`:'';
+    let thumb = '';
+    let badge = '';
+
+    // Priority: thumbnail → drawing image → 3D placeholder → PDF placeholder
+    if(p.thumbnailData){
+      thumb = `<img src="${p.thumbnailData}" alt="${escapeHtml(p.title||'Project')}">`;
+    } else if(p.drawingData && (p.drawingType||'').toLowerCase()==='image'){
+      thumb = `<img src="${p.drawingData}" alt="${escapeHtml(p.title||'Project')}">`;
+    } else if(p.modelData){
+      thumb = `<div class="placeholder">3D MODEL<br>${escapeHtml(p.title||'Untitled')}</div>`;
+    } else if(p.drawingData && (p.drawingType||'').toLowerCase()==='pdf'){
+      thumb = `<div class="placeholder">PDF DRAWING<br>${escapeHtml(p.title||'Untitled')}</div>`;
+    } else {
+      thumb = `<div class="placeholder">${escapeHtml(p.title||'Untitled')}</div>`;
+    }
+
+    // Badge shows what assets exist
+    const hasModel = !!(p.modelData && p.modelData.length);
+    const hasDrawing = !!(p.drawingData && p.drawingData.length);
+    if(hasModel && hasDrawing) badge = `<span class="badge">3D + 2D</span>`;
+    else if(hasModel) badge = `<span class="badge">3D MODEL</span>`;
+    else if(hasDrawing && (p.drawingType||'').toLowerCase()==='pdf') badge = `<span class="badge">PDF</span>`;
+    else if(hasDrawing) badge = `<span class="badge">IMAGE</span>`;
+
     return `
       <article class="project-card" data-id="${id}">
         <div class="project-thumb">${thumb}${badge}</div>
@@ -236,12 +256,40 @@ function openProject(id,data){
   $('#detail-title').textContent=data.title||'Untitled';
   $('#detail-desc').textContent=data.description||'';
 
+  /* ---- Detect what's available ---- */
+  const hasModel = !!(data.modelData && data.modelData.length);
+  const hasDrawing = !!(data.drawingData && data.drawingData.length);
+
+  /* ---- Layout: adjust grid based on available assets ---- */
+  const detailBody = $('.detail-body');
+  const modelWrap = $('.detail-model-wrap');
+  const drawingWrap = $('.detail-drawing');
+  if(hasModel && hasDrawing){
+    detailBody.style.gridTemplateColumns = '1.6fr 1fr';
+    modelWrap.style.display = '';
+    drawingWrap.style.display = '';
+  } else if(hasModel && !hasDrawing){
+    detailBody.style.gridTemplateColumns = '1fr';
+    modelWrap.style.display = '';
+    drawingWrap.style.display = 'none';
+  } else if(!hasModel && hasDrawing){
+    detailBody.style.gridTemplateColumns = '1fr';
+    modelWrap.style.display = 'none';
+    drawingWrap.style.display = '';
+  } else {
+    // Only thumbnail exists — show it big
+    detailBody.style.gridTemplateColumns = '1fr';
+    modelWrap.style.display = 'none';
+    drawingWrap.style.display = '';
+  }
+
+  /* ---- Drawing panel (or fallback to thumbnail) ---- */
   const drawPreview=$('#drawing-preview');
   const drawOpen=$('#drawing-open');
 
-  if(data.drawingData){
+  if(hasDrawing){
     const isPdf=(data.drawingType||'').toLowerCase()==='pdf';
-    const mime=isPdf?'application/pdf':(data.drawingMime||'image/png');
+    const mime=isPdf?'application/pdf':(data.drawingMime||'image/jpeg');
     const dataUrl=base64ToBlobUrl(data.drawingData, mime);
 
     if(isPdf){
@@ -249,7 +297,7 @@ function openProject(id,data){
         <div class="pdf-note">
           PDF TECHNICAL DRAWING<br>
           <a href="${dataUrl}" download="${escapeHtml(data.title||'drawing')}.pdf" class="contact-link" style="margin-top:14px">DOWNLOAD PDF ↗</a>
-          <div style="margin-top:10px;font-size:9px;color:#6b7d83">(PDF preview in-browser is limited — download for full view)</div>
+          <div style="margin-top:10px;font-size:9px;color:#6b7d83">(In-browser PDF preview is limited — download to view)</div>
         </div>`;
       drawOpen.style.display='block';
       drawOpen.href=dataUrl;
@@ -265,16 +313,24 @@ function openProject(id,data){
       drawOpen.removeAttribute('download');
       drawOpen.innerHTML='Open full drawing <b>↗</b>';
     }
-  }else{
-    drawPreview.innerHTML=`<div class="pdf-note">No drawing attached.</div>`;
+  } else if(data.thumbnailData){
+    // No drawing, but has thumbnail — show it as large preview
+    drawPreview.innerHTML=`
+      <a href="${data.thumbnailData}" target="_blank" rel="noopener">
+        <img src="${data.thumbnailData}" alt="${escapeHtml(data.title||'project')}">
+      </a>`;
+    drawOpen.style.display='none';
+  } else {
+    drawPreview.innerHTML=`<div class="pdf-note">No drawing or image attached.</div>`;
     drawOpen.style.display='none';
   }
 
+  /* ---- 3D model viewer ---- */
   const canvas=$('#detail-model');
   if(detailScene){detailScene.dispose();detailScene=null;}
-  detailScene=createScene(canvas);
 
-  if(data.modelData){
+  if(hasModel){
+    detailScene=createScene(canvas);
     try{
       const buffer=base64ToArrayBuffer(data.modelData);
       gltfLoader.parse(
@@ -290,10 +346,9 @@ function openProject(id,data){
       console.error('GLB decode error',err);
       detailScene.setObject(makeFallbackKitchen());
     }
-  }else{
-    detailScene.setObject(makeFallbackKitchen());
   }
 
+  // Reset toolbar state (only relevant when model exists)
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='iso'));
   $('#wire-toggle')?.classList.remove('selected');
 }
