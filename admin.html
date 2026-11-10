@@ -141,31 +141,38 @@
     <div id="projects-list"></div>
 
     <h3>Add new project</h3>
-    <form id="project-form">
-      <div class="row">
-        <div><label>Title *</label><input name="title" required placeholder="Kitchen island"></div>
-        <div><label>Focus / tag</label><input name="focus" placeholder="Casework / Worktop"></div>
-      </div>
-      <label>Description</label>
-      <textarea name="description" placeholder="Short description shown in the detail view"></textarea>
-      <div class="row">
-        <div>
-          <label>GLB model file (.glb) * (max 5 MB)</label>
-          <input type="file" name="glb" accept=".glb,model/gltf-binary" required>
-          <div class="file-note" id="glb-size-note"></div>
-        </div>
-        <div>
-          <label>Technical drawing (PDF or image) * (max 2 MB)</label>
-          <input type="file" name="drawing" accept=".pdf,image/*" required>
-          <div class="file-note" id="drawing-size-note"></div>
-        </div>
-      </div>
-      <label>Optional thumbnail (image — auto-compressed to ~80 KB)</label>
-      <input type="file" name="thumbnail" accept="image/*">
-      <button type="submit" id="project-submit">Publish project</button>
-      <div class="progress" id="project-progress" hidden><div></div></div>
-      <div class="status" id="project-status"></div>
-    </form>
+<form id="project-form">
+  <div class="row">
+    <div><label>Title *</label><input name="title" required placeholder="Kitchen island"></div>
+    <div><label>Focus / tag</label><input name="focus" placeholder="Casework / Worktop"></div>
+  </div>
+  <label>Description</label>
+  <textarea name="description" placeholder="Short description shown in the detail view"></textarea>
+
+  <div class="hint" style="color:#f29a43;margin-top:20px;margin-bottom:8px">
+    Provide <b>at least one</b> of these three files. You don't need all of them.
+  </div>
+
+  <div class="row">
+    <div>
+      <label>GLB model file (.glb) — max 5 MB</label>
+      <input type="file" name="glb" accept=".glb,model/gltf-binary">
+      <div class="file-note" id="glb-size-note"></div>
+    </div>
+    <div>
+      <label>Technical drawing (PDF or image) — max 2 MB</label>
+      <input type="file" name="drawing" accept=".pdf,image/*">
+      <div class="file-note" id="drawing-size-note"></div>
+    </div>
+  </div>
+
+  <label>Thumbnail / cover image (image — auto-compressed to ~80 KB)</label>
+  <input type="file" name="thumbnail" accept="image/*">
+
+  <button type="submit" id="project-submit">Publish project</button>
+  <div class="progress" id="project-progress" hidden><div></div></div>
+  <div class="status" id="project-status"></div>
+</form>
   </section>
 
   <section>
