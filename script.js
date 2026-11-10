@@ -66,23 +66,46 @@ function createScene(canvas){
 
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.enableDamping=true;controls.dampingFactor=.075;
-  controls.minDistance=.5;controls.maxDistance=50;
+  controls.minDistance=.1;
+  controls.maxDistance=100;
 
   let object=null;
   let bounds=new THREE.Box3(),center=new THREE.Vector3(),size=new THREE.Vector3(),fitDistance=7;
   let raf=0;
 
+  // FIXED: Robust bounding box & camera framing for uploaded GLB models
   function frameObject(){
     if(!object)return;
-    bounds.setFromObject(object);bounds.getCenter(center);bounds.getSize(size);
-    const maxDim=Math.max(size.x,size.y,size.z,.5);
-    fitDistance=(maxDim/2)/Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*1.75;
+    
+    // Force matrix updates before measuring
+    object.updateMatrixWorld(true);
+    
+    // Recalculate bounding box
+    bounds.setFromObject(object);
+    bounds.getCenter(center);
+    bounds.getSize(size);
+    
+    const maxDim = Math.max(size.x, size.y, size.z, 1);
+    
+    // Calculate fit distance based on FOV. 2.5 multiplier ensures extra padding so model doesn't touch edges.
+    fitDistance = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2.5;
+    
+    // Update grid position and size to match the model
+    grid.position.y = bounds.min.y - (maxDim * 0.05);
+    grid.scale.set(Math.max(maxDim, 10), 1, Math.max(maxDim, 10));
+
+    // Position camera using the isometric angle
     controls.target.copy(center);
-    camera.position.set(center.x+fitDistance*.72,center.y+fitDistance*.72,center.z+fitDistance);
-    camera.near=Math.max(.01,fitDistance/100);
-    camera.far=fitDistance*30;
+    camera.position.set(
+      center.x + fitDistance * 0.72,
+      center.y + fitDistance * 0.72,
+      center.z + fitDistance
+    );
+    
+    // Update clipping planes so camera can see large/small models
+    camera.near = Math.max(.01, fitDistance / 100);
+    camera.far = fitDistance * 50;
     camera.updateProjectionMatrix();
-    grid.position.y=bounds.min.y-.04;
     controls.update();
   }
 
@@ -96,16 +119,20 @@ function createScene(canvas){
 
   function setView(view){
     if(!object)return;
-    const d=fitDistance*1.65;
+    const d=fitDistance;
+    // Directions for orthographic views
     const dirs={
       iso:new THREE.Vector3(.72,.72,1),
-      front:new THREE.Vector3(0,.08,1),
-      side:new THREE.Vector3(1,.08,0),
+      front:new THREE.Vector3(0,0,1),
+      side:new THREE.Vector3(1,0,0),
       top:new THREE.Vector3(0,1,.001)
     };
     const dir=dirs[view]||dirs.iso;
-    camera.position.copy(center).add(dir.clone().multiplyScalar(d));
-    controls.target.copy(center);controls.update();
+    
+    // Move camera along direction axis at the fit distance
+    camera.position.copy(center).add(dir.clone().normalize().multiplyScalar(d));
+    controls.target.copy(center);
+    controls.update();
   }
 
   function setWire(v){
@@ -192,7 +219,7 @@ function sortByCreatedAt(arr){
 }
 
 /* ============================================================
-   PROJECTS — flexible uploads (GLB, drawing, thumbnail — any combination)
+   PROJECTS
    ============================================================ */
 const projectGrid=$('#project-grid');
 const detailOverlay=$('#project-detail');
@@ -209,7 +236,6 @@ function renderProjects(list){
     let thumb = '';
     let badge = '';
 
-    // Priority: thumbnail → drawing image → 3D placeholder → PDF placeholder
     if(p.thumbnailData){
       thumb = `<img src="${p.thumbnailData}" alt="${escapeHtml(p.title||'Project')}">`;
     } else if(p.drawingData && (p.drawingType||'').toLowerCase()==='image'){
@@ -222,7 +248,6 @@ function renderProjects(list){
       thumb = `<div class="placeholder">${escapeHtml(p.title||'Untitled')}</div>`;
     }
 
-    // Badge shows what assets exist
     const hasModel = !!(p.modelData && p.modelData.length);
     const hasDrawing = !!(p.drawingData && p.drawingData.length);
     if(hasModel && hasDrawing) badge = `<span class="badge">3D + 2D</span>`;
@@ -256,11 +281,9 @@ function openProject(id,data){
   $('#detail-title').textContent=data.title||'Untitled';
   $('#detail-desc').textContent=data.description||'';
 
-  /* ---- Detect what's available ---- */
   const hasModel = !!(data.modelData && data.modelData.length);
   const hasDrawing = !!(data.drawingData && data.drawingData.length);
 
-  /* ---- Layout: adjust grid based on available assets ---- */
   const detailBody = $('.detail-body');
   const modelWrap = $('.detail-model-wrap');
   const drawingWrap = $('.detail-drawing');
@@ -277,13 +300,11 @@ function openProject(id,data){
     modelWrap.style.display = 'none';
     drawingWrap.style.display = '';
   } else {
-    // Only thumbnail exists — show it big
     detailBody.style.gridTemplateColumns = '1fr';
     modelWrap.style.display = 'none';
     drawingWrap.style.display = '';
   }
 
-  /* ---- Drawing panel (or fallback to thumbnail) ---- */
   const drawPreview=$('#drawing-preview');
   const drawOpen=$('#drawing-open');
 
@@ -314,7 +335,6 @@ function openProject(id,data){
       drawOpen.innerHTML='Open full drawing <b>↗</b>';
     }
   } else if(data.thumbnailData){
-    // No drawing, but has thumbnail — show it as large preview
     drawPreview.innerHTML=`
       <a href="${data.thumbnailData}" target="_blank" rel="noopener">
         <img src="${data.thumbnailData}" alt="${escapeHtml(data.title||'project')}">
@@ -325,7 +345,6 @@ function openProject(id,data){
     drawOpen.style.display='none';
   }
 
-  /* ---- 3D model viewer ---- */
   const canvas=$('#detail-model');
   if(detailScene){detailScene.dispose();detailScene=null;}
 
@@ -348,7 +367,6 @@ function openProject(id,data){
     }
   }
 
-  // Reset toolbar state (only relevant when model exists)
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='iso'));
   $('#wire-toggle')?.classList.remove('selected');
 }
